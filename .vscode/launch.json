@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "stutil",
+            "cwd": "${workspaceRoot}",
+            "executable": "./BUILD/DEBUG/firmware.elf",
+            "name": "Debug (ST-Util)",
+            "device": "STM32F407ZG",
+            "v1": false
+        }
+    ]
+}

@@ -1,0 +1,216 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "BUILD (RELEASE)",
+            "type": "shell",
+            "command": "mbed",
+            "args": [
+                "compile",
+                "-m",
+                "CORE2",
+                "-t",
+                "GCC_ARM",
+                "--profile",
+                "release",
+                "-N",
+                "firmware",
+                "--source",
+                "${workspaceFolder}/../mbed-os",
+                "--source",
+                "${workspaceFolder}",
+                "--build",
+                "${workspaceFolder}/BUILD/RELEASE"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": "absolute",
+                "pattern": {
+                    "regexp": "^(\\[ERROR\\])*\\s*(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 2,
+                    "line": 3,
+                    "column": 4,
+                    "severity": 5,
+                    "message": 6
+                }
+            }
+        },
+        {
+            "label": "BUILD (DEBUG)",
+            "type": "shell",
+            "command": "mbed",
+            "args": [
+                "compile",
+                "-m",
+                "CORE2",
+                "-t",
+                "GCC_ARM",
+                "--profile",
+                "debug",
+                "-N",
+                "firmware",
+                "--source",
+                "${workspaceFolder}/../mbed-os",
+                "--source",
+                "${workspaceFolder}",
+                "--build",
+                "${workspaceFolder}/BUILD/DEBUG"
+            ],
+            "group": "build",
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": "absolute",
+                "pattern": {
+                    "regexp": "^(\\[ERROR\\])*\\s*(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 2,
+                    "line": 3,
+                    "column": 4,
+                    "severity": 5,
+                    "message": 6
+                }
+            }
+        },
+        {
+            "label": "FLASH FIRMWARE (RELEASE)",
+            "type": "shell",
+            "command": "st-flash write ${workspaceFolder}/BUILD/RELEASE/firmware.bin 0x8000000",
+            "windows": {
+                "command": "ST-LINK_CLI",
+                "args": [
+                    "-P",
+                    "${workspaceFolder}\\BUILD\\RELEASE\\firmware.bin",
+                    "0x08000000",
+                    "-V",
+                    "\"after_programming\"",
+                    "-Rst"
+                ]
+            },
+        },
+        {
+            "label": "FLASH FIRMWARE (DEBUG)",
+            "type": "shell",
+            "command": "st-flash write ${workspaceFolder}/BUILD/DEBUG/firmware.bin 0x8000000",
+            "windows": {
+                "command": "ST-LINK_CLI",
+                "args": [
+                    "-P",
+                    "${workspaceFolder}\\BUILD\\DEBUG\\firmware.bin",
+                    "0x08000000",
+                    "-V",
+                    "\"after_programming\"",
+                    "-Rst"
+                ]
+            },
+        },
+        {
+            "label":"CREATE STATIC MBED-OS LIB (RELEASE)",
+            "type":"shell",
+            "command": "mbed",
+            "args": [
+                "compile",
+                "-t",
+                "GCC_ARM",
+                "-m",
+                "CORE2",
+                "--library",
+                "--profile",
+                "release",
+                "--source=${workspaceFolder}/../mbed-os",
+                "--source=${workspaceFolder}",
+                "--build=${workspaceFolder}/BUILD/mbed-os-release"
+            ]
+        },
+        {
+            "label":"CREATE STATIC MBED-OS LIB (DEBUG)",
+            "type":"shell",
+            "command": "mbed",
+            "args": [
+                "compile",
+                "-t",
+                "GCC_ARM",
+                "-m",
+                "CORE2",
+                "--library",
+                "--profile",
+                "debug",
+                "--source=${workspaceFolder}/../mbed-os",
+                "--source=${workspaceFolder}",
+                "--build=${workspaceFolder}/BUILD/mbed-os-debug"
+            ]
+        },
+        {
+            "label": "BUILD FROM STATIC LIB (RELEASE)",
+            "type": "shell",
+            "command": "mbed",
+            "args": [
+                "compile",
+                "--source",
+                "${workspaceFolder}/BUILD/mbed-os-release",
+                "--source",
+                "${workspaceFolder}/src",
+                "--profile",
+                "release",
+                "-N",
+                "firmware",
+                "--build",
+                "${workspaceFolder}/BUILD/RELEASE"
+            ],
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": "absolute",
+                "pattern": {
+                    "regexp": "^(\\[ERROR\\])*\\s*(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 2,
+                    "line": 3,
+                    "column": 4,
+                    "severity": 5,
+                    "message": 6
+                }
+            }
+        },
+        {
+            "label": "BUILD FROM STATIC LIB (DEBUG)",
+            "type": "shell",
+            "command": "mbed",
+            "args": [
+                "compile",
+                "--source",
+                "${workspaceFolder}/BUILD/mbed-os-debug",
+                "--source",
+                "${workspaceFolder}/src",
+                "--profile",
+                "debug",
+                "-N",
+                "firmware",
+                "--build",
+                "${workspaceFolder}/BUILD/DEBUG"
+            ],
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": "absolute",
+                "pattern": {
+                    "regexp": "^(\\[ERROR\\])*\\s*(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 2,
+                    "line": 3,
+                    "column": 4,
+                    "severity": 5,
+                    "message": 6
+                }
+            }
+        },
+        {
+            "label": "CLEAN DEBUG",
+            "type": "shell",
+            "command": "rm -rf ${workspaceFolder}/BUILD/DEBUG"
+        },
+        {
+            "label": "CLEAN RELEASE",
+            "type": "shell",
+            "command": "rm -rf ${workspaceFolder}/BUILD/RELEASE"
+        }
+    ]
+}

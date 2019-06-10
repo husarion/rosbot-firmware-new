@@ -1,0 +1,14 @@
+{
+    "name":"rosbot-drive",
+    "config":
+    {
+        "set-num-wheels":
+        {
+            "help": "Choose between two or four wheel drive.",
+            "macro_name": "ROSBOT_DRIVE_TYPE",
+            "accepted_values": [2,4],
+            "value": 4,
+            "required": true
+        }
+    }
+}
