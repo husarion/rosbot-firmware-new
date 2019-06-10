@@ -10,6 +10,11 @@ You need following tools:
 * [STM32 ST-LINK Utility](https://www.st.com/en/development-tools/stsw-link004.html) (Windows)
 * [stlink flasher](https://github.com/texane/stlink/blob/master/README.md) (Mac/Linux)
 * [Mbed CLI](https://os.mbed.com/docs/mbed-os/v5.12/tools/installation-and-setup.html) 
+
+### Required Visual Studio Code extensions:
+* [Microsoft C/C++ extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools) (`ms-vscode.cpptools`)
+* [Cortex-Debug](https://marketplace.visualstudio.com/items?itemName=marus25.cortex-debug) (`marus25.cortex-debug`)
+
 ## Mbed CLI installation
 
 To install the tool follow the official documentation:
