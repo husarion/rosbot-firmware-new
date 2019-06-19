@@ -4,7 +4,10 @@
         "ENCODER_1=TIM2",
         "ENCODER_2=TIM8",
         "ENCODER_3=TIM3",
-        "ENCODER_4=TIM4"
+        "ENCODER_4=TIM4",
+        "UPPER_RESISTOR=5.6e4",
+        "LOWER_RESISTOR=1.0e4",
+        "VIN_MEAS_CORRECTION=0.986"
     ],
     "target_overrides": {
         "CORE2": {
@@ -19,7 +22,10 @@
             "rosserial-mbed.baudrate": 230400,
             "rosserial-mbed.out_buffer_size": 768,
             "rosserial-mbed.in_buffer_size": 768,
-            "rosbot-drive.set-num-wheels": 4
+            "rosbot-drive.set-num-wheels": 4,
+            "target.mbed_app_start":"0x08010000",
+            "target.mbed_rom_start":"0x08000000",
+            "target.mbed_rom_size":"0x100000"
         }
     }
 }

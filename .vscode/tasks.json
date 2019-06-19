@@ -75,9 +75,41 @@
             }
         },
         {
-            "label": "FLASH FIRMWARE (RELEASE)",
+            "label": "FLASH FIRMWARE WHEN BOOTLOADER (RELEASE)",
             "type": "shell",
-            "command": "st-flash write ${workspaceFolder}/BUILD/RELEASE/firmware.bin 0x8000000",
+            "command": "st-flash write ${workspaceFolder}/BUILD/RELEASE/firmware_update.bin 0x08010000",
+            "windows": {
+                "command": "ST-LINK_CLI",
+                "args": [
+                    "-P",
+                    "${workspaceFolder}\\BUILD\\RELEASE\\firmware_update.bin",
+                    "0x08010000",
+                    "-V",
+                    "\"after_programming\"",
+                    "-Rst"
+                ]
+            },
+        },
+        {
+            "label": "FLASH FIRMWARE WHEN BOOTLOADER (DEBUG)",
+            "type": "shell",
+            "command": "st-flash write ${workspaceFolder}/BUILD/DEBUG/firmware_update.bin 0x08010000",
+            "windows": {
+                "command": "ST-LINK_CLI",
+                "args": [
+                    "-P",
+                    "${workspaceFolder}\\BUILD\\DEBUG\\firmware_update.bin",
+                    "0x08010000",
+                    "-V",
+                    "\"after_programming\"",
+                    "-Rst"
+                ]
+            },
+        },
+        {
+            "label": "FLASH FIRMWARE NO BOOTLOADER (RELEASE)",
+            "type": "shell",
+            "command": "st-flash write ${workspaceFolder}/BUILD/RELEASE/firmware.bin 0x08000000",
             "windows": {
                 "command": "ST-LINK_CLI",
                 "args": [
@@ -91,9 +123,9 @@
             },
         },
         {
-            "label": "FLASH FIRMWARE (DEBUG)",
+            "label": "FLASH FIRMWARE NO BOOTLOADER (DEBUG)",
             "type": "shell",
-            "command": "st-flash write ${workspaceFolder}/BUILD/DEBUG/firmware.bin 0x8000000",
+            "command": "st-flash write ${workspaceFolder}/BUILD/DEBUG/firmware.bin 0x08000000",
             "windows": {
                 "command": "ST-LINK_CLI",
                 "args": [

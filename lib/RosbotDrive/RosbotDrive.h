@@ -9,19 +9,17 @@
 
 enum RosbotMotNum
 {
-    FR = 0,
-    FL = 1,
-    RR = 2,
-    RL = 3
+    MOTOR1 = 0,
+    MOTOR2 = 1,
+    MOTOR3 = 2,
+    MOTOR4 = 3
 };
 
 enum SpeedMode
 {
     TICSKPS,
-    RPM,
-    RPM_NOGEAR,
     MPS,
-    DUTY_CYCLE,
+    DUTY_CYCLE
 };
 
 enum RosbotDriveStates
@@ -81,7 +79,7 @@ class RosbotDrive
 public:
     static const RosbotWheel_t DEFAULT_WHEEL_PARAMS;
     static const RosbotDrivePid_t DEFAULT_PID_PARAMS;
-    static RosbotDrive * getInstance(const RosbotDrive_params_t * params);
+    static RosbotDrive * getInstance(const RosbotDrive_params_t * params=NULL);
     static int getRosbotDriveType();
     void init(int freq=PWM_DEFAULT_FREQ_HZ);
     void enable(bool en=true);
@@ -89,7 +87,7 @@ public:
     void enablePidReg(bool en);
     bool isPidEnabled();
     float getSpeed(RosbotMotNum mot_num);
-    // float getSpeed(RosbotMotNum mot_num, SpeedMode mode);
+    float getSpeed(RosbotMotNum mot_num, SpeedMode mode);
     float getDistance(RosbotMotNum mot_num);
     void resetDistance();
     int32_t getEncoderTicks(RosbotMotNum mot_num);

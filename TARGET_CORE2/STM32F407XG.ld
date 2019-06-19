@@ -54,6 +54,7 @@ SECTIONS
     .text :
     {
         KEEP(*(.isr_vector))
+        KEEP(*(.bootflag))
         *(.text*)
         KEEP(*(.init))
         KEEP(*(.fini))

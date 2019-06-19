@@ -1,5 +1,4 @@
 #include "RosbotDrive.h"
-
 #define FOR(x) for(int i=0;i<x;i++)
 
 /***************************CMSIS-DSP-PID***************************/
@@ -176,7 +175,7 @@ RosbotDrive::RosbotDrive(const RosbotDrive_params_t * params)
 
 RosbotDrive * RosbotDrive::getInstance(const RosbotDrive_params_t * params)
 {
-    if(_instance==NULL)
+    if(_instance==NULL && params!=NULL)
     {
         _instance = new RosbotDrive(params);
     }
@@ -262,6 +261,7 @@ void RosbotDrive::enable(bool en)
 
 void RosbotDrive::regulatorLoop()
 {
+    //TODO: Add acceleration and deacceleration cotrol and fault handling
     uint64_t sleepTime;
     int32_t distance;
     double pidout,tmp;
@@ -384,4 +384,33 @@ void RosbotDrive::getPidDebugData(PidDebugData_t * data, RosbotMotNum mot_num)
     data->error=_error[mot_num];
     data->pidout=_pidout[mot_num];
 }
-// float RosbotDrive::getSpeed(RosbotMotNum mot_num, SpeedMode mode);
+
+float RosbotDrive::getSpeed(RosbotMotNum mot_num, SpeedMode mode)
+{
+    switch(mode)
+    {
+        case TICSKPS:
+            return _cspeed_mps[mot_num]/_wheel_coefficient;
+        case MPS:
+            return _cspeed_mps[mot_num];
+        case DUTY_CYCLE:
+            if(_mot[mot_num]!=NULL)
+                return _mot[mot_num]->getDutyCycle();
+        default:
+            return 0.0;
+    }
+}
+
+void RosbotDrive::resetDistance()
+{
+    if(_pid_state)
+        return;
+    FOR(ROSBOT_DRIVE_TYPE)
+    {
+        _mot[i]->setPower(0);
+        _encoder[i]->resetCount();
+        arm_pid_reset_f32(_pid_instance[i]);
+        _tspeed_mps[i]=0;
+        _cdistance[i]=0;
+    }
+}
