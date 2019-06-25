@@ -1,5 +1,7 @@
 #include "rosbot_kinematics.h"
 
+namespace rosbot_kinematics {
+
 const RosbotDrive_params_t ROSBOT_PARAMS = {
     .pid_params = RosbotDrive::DEFAULT_PID_PARAMS,
     .wheel_params = {
@@ -52,3 +54,4 @@ void updateRosbotOdometry(RosbotDrive * drive, RosbotOdometry_t * odom, float dt
     odom->robot_y_pos = odom->robot_y_pos + odom->robot_y_vel * dtime;
 }
 
+}

@@ -1,24 +1,31 @@
 /** @file main.cpp
- * ROSbot firmware - 19th of June 2019 
+ * ROSbot firmware - 25th of June 2019 
  */
 #include <mbed.h>
 #include <RosbotDrive.h>
+#include <rosbot_kinematics.h>
+#include <rosbot_sensors.h>
 #include <ros.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/BatteryState.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/QuaternionStamped.h>
 #include <sensor_msgs/BatteryState.h>
 #include <sensor_msgs/Range.h>
-#include <rosbot_kinematics.h>
 #include <tf/tf.h>
-#include <rosbot_sensors.h>
+#include <std_msgs/UInt8.h>
+#include <rosbot/Configuration.h>
+#include <map>
+#include <string>
 
 geometry_msgs::Twist current_vel;
 sensor_msgs::JointState joint_states;
 sensor_msgs::BatteryState battery_state;
 sensor_msgs::Range range_msg[4];
 geometry_msgs::PoseStamped pose;
+std_msgs::UInt8 button_msg;
+geometry_msgs::QuaternionStamped quaternion_msg;
 
 ros::NodeHandle nh;
 ros::Publisher *vel_pub;
@@ -26,10 +33,30 @@ ros::Publisher *joint_state_pub;
 ros::Publisher *battery_pub;
 ros::Publisher *range_pub[4];
 ros::Publisher *pose_pub;
+ros::Publisher *button_pub;
+ros::Publisher *imu_pub;
 
-RosbotOdometry_t odometry;
+rosbot_kinematics::RosbotOdometry_t odometry;
 RosbotDrive * driver;
 MultiDistanceSensor * distance_sensors;
+volatile bool distance_sensors_enabled = false;
+
+DigitalOut led2(LED2,0);
+DigitalOut led3(LED3,0);
+InterruptIn button1(BUTTON1);
+InterruptIn button2(BUTTON2);
+volatile bool button1_publish_flag = false;
+volatile bool button2_publish_flag = false;
+
+static void button1Callback()
+{
+    button1_publish_flag = true;
+}
+
+static void button2Callback()
+{
+    button2_publish_flag = true;
+}
 
 // JointState
 char * joint_state_name[] = {"front_left_wheel_hinge", "front_right_wheel_hinge", "rear_left_wheel_hinge", "rear_right_wheel_hinge"};
@@ -40,6 +67,18 @@ double eff[] = {0, 0, 0, 0};
 // Range
 const char * range_id[] = {"range_fr","range_fl","range_rr","range_rl"};
 const char * range_pub_names[] = {"/range/fr","/range/fl","/range/rr","/range/rl"};
+
+static void initImuPublisher()
+{
+    imu_pub = new ros::Publisher("/imu", &quaternion_msg);
+    nh.advertise(*imu_pub);
+}
+
+static void initButtonPublisher()
+{
+    button_pub = new ros::Publisher("/buttons", &button_msg);
+    nh.advertise(*button_pub);
+}
 
 static void initRangePublisher()
 {
@@ -85,7 +124,7 @@ static void initVelocityPublisher()
     current_vel.angular.x = 0;
     current_vel.angular.y = 0;
     current_vel.angular.z = 0;
-    vel_pub = new ros::Publisher("velocity", &current_vel);
+    vel_pub = new ros::Publisher("/velocity", &current_vel);
     nh.advertise(*vel_pub);
 }
 
@@ -111,18 +150,149 @@ static void initJointStatePublisher()
 
 static void velocityCallback(const geometry_msgs::Twist &twist_msg)
 {
-    setRosbotSpeed(driver,twist_msg.linear.x, twist_msg.angular.z);
+    rosbot_kinematics::setRosbotSpeed(driver,twist_msg.linear.x, twist_msg.angular.z);
 }
 
 static void updateOdometryAndSpeed(float dtime)
 {
-    updateRosbotOdometry(driver,&odometry,dtime);
+    rosbot_kinematics::updateRosbotOdometry(driver,&odometry,dtime);
     current_vel.linear.x = sqrt(odometry.robot_x_vel * odometry.robot_x_vel + odometry.robot_y_vel * odometry.robot_y_vel);
     current_vel.angular.z = odometry.robot_angular_vel;
 
     pose.pose.position.x = odometry.robot_x_pos;
     pose.pose.position.y = odometry.robot_y_pos;
     pose.pose.orientation = tf::createQuaternionFromYaw(odometry.robot_angular_pos);
+}
+
+class ConfigFunctionality
+{
+public:
+    typedef uint8_t (ConfigFunctionality::*configuration_srv_fun_t)(const char *datain, const char **dataout);
+    static ConfigFunctionality *getInstance();
+    configuration_srv_fun_t findFunctionality(const char *command);
+    uint8_t setLed(const char *datain, const char **dataout);
+    uint8_t enableImu(const char *datain, const char **dataout);
+    uint8_t enableDistanceSensors(const char *datain, const char **dataout);
+
+private:
+    ConfigFunctionality();
+    char _buffer[30];
+    static ConfigFunctionality *_instance;
+    static const char SLED_COMMAND[];
+    static const char EIMU_COMMAND[];
+    static const char EDSE_COMMAND[];
+    static const char DATA_OUT_NULL[];
+    map<std::string, configuration_srv_fun_t> _commands;
+};
+
+ConfigFunctionality * ConfigFunctionality::_instance=NULL;
+
+const char ConfigFunctionality::SLED_COMMAND[]="SLED";
+const char ConfigFunctionality::EIMU_COMMAND[]="EIMU";
+const char ConfigFunctionality::EDSE_COMMAND[]="EDSE";
+const char ConfigFunctionality::DATA_OUT_NULL[]="No data";
+
+ConfigFunctionality::ConfigFunctionality()
+{
+    _commands[SLED_COMMAND] = &ConfigFunctionality::setLed;
+    _commands[EIMU_COMMAND] = &ConfigFunctionality::enableImu;
+    _commands[EDSE_COMMAND] = &ConfigFunctionality::enableDistanceSensors;
+}
+
+ConfigFunctionality::configuration_srv_fun_t ConfigFunctionality::findFunctionality(const char *command)
+{
+    std::map<std::string, configuration_srv_fun_t>::iterator it = _commands.find(command);
+    if(it != _commands.end())
+        return it->second;
+    else
+        return NULL;
+}
+uint8_t ConfigFunctionality::enableImu(const char *datain, const char **dataout)
+{
+    int en;
+    *dataout = DATA_OUT_NULL;
+    if(sscanf(datain,"%d",&en) == 1)
+    {
+        rosbot_sensors::enableImu(en);
+        rosbot::Configuration::Response::SUCCESS; 
+    }
+    return rosbot::Configuration::Response::FAILURE;
+}
+
+uint8_t ConfigFunctionality::enableDistanceSensors(const char *datain, const char **dataout)
+{
+    int en;
+    *dataout = DATA_OUT_NULL;
+    if(sscanf(datain,"%d",&en) == 1)
+    {
+        if(en == 0)
+        {
+            distance_sensors_enabled = false;
+            for(int i=0;i<4;i++)
+            {
+                VL53L0X * sensor = distance_sensors->getSensor(i);
+                sensor->stopContinuous();
+            }
+        }
+        else
+        {
+            distance_sensors_enabled = true;
+            for(int i=0;i<4;i++)
+            {
+                VL53L0X * sensor = distance_sensors->getSensor(i);
+                sensor->setTimeout(50); 
+                sensor->startContinuous();
+            }
+        }
+        return rosbot::Configuration::Response::SUCCESS; 
+    }
+    return rosbot::Configuration::Response::FAILURE;
+}
+
+uint8_t ConfigFunctionality::setLed(const char *datain, const char **dataout)
+{
+    int led_num, led_state;
+    *dataout = DATA_OUT_NULL;
+    if(sscanf(datain,"%d %d", &led_num, &led_state) == 2)
+    {
+        switch(led_num)
+        {
+            case 2:
+                led2 = led_state;
+                return rosbot::Configuration::Response::SUCCESS;
+            case 3:
+                led3 = led_state;
+                return rosbot::Configuration::Response::SUCCESS;
+            default:
+                break;
+        }
+    }
+    return rosbot::Configuration::Response::FAILURE;
+}
+
+ConfigFunctionality * ConfigFunctionality::getInstance()
+{
+    if(_instance == NULL)
+    {
+        _instance = new ConfigFunctionality();
+    }
+    return _instance;
+}
+
+void responseCallback(const rosbot::Configuration::Request & req, rosbot::Configuration::Response & res)
+{
+    ConfigFunctionality * config_functionality = ConfigFunctionality::getInstance();
+    ConfigFunctionality::configuration_srv_fun_t fun = config_functionality->findFunctionality(req.command); 
+    if(fun != NULL)
+    {
+        nh.loginfo("Command found!");
+        res.result = (config_functionality->*fun)(req.data, &res.data);
+    }
+    else
+    {
+        nh.loginfo("Command not found!");
+        res.result = rosbot::Configuration::Response::COMMAND_NOT_FOUND;
+    }
 }
 
 #if defined(MEMORY_DEBUG_INFO)
@@ -171,20 +341,32 @@ int print_debug_info()
 int main()
 {
     DigitalOut sens_power(SENS_POWER_ON,1);
-    driver = RosbotDrive::getInstance(&ROSBOT_PARAMS);
-    distance_sensors = MultiDistanceSensor::getInstance(&SENSORS_PIN_DEF);
+    driver = RosbotDrive::getInstance(&rosbot_kinematics::ROSBOT_PARAMS);
+    distance_sensors = MultiDistanceSensor::getInstance(&rosbot_sensors::SENSORS_PIN_DEF);
 
-    if(distance_sensors->init()!=4)
-        nh.logerror("VL53L0X sensros initialisation failure!");
     driver->init();
     driver->enable(true);
     driver->enablePidReg(true);
 
     events::EventQueue * q = mbed_event_queue();
-    initBatteryWatchdog(q,5,8.0);
+    rosbot_sensors::initBatteryWatchdog(q,5,8.0);
+
+    button1.mode(PullUp);
+    button2.mode(PullUp);
+    button1.fall(button1Callback);
+    button2.fall(button2Callback);
 
     nh.initNode();
-    ros::Subscriber<geometry_msgs::Twist> cmd_vel_sub("cmd_vel", &velocityCallback);
+
+    if(distance_sensors->init()!=4)
+        nh.logerror("VL53L0X sensros initialisation failure!");
+
+    if(rosbot_sensors::initImu()!=INV_SUCCESS)
+       nh.logerror("MPU9250 initialisation failure!");
+
+    ros::Subscriber<geometry_msgs::Twist> cmd_vel_sub("/cmd_vel", &velocityCallback);
+    ros::ServiceServer<rosbot::Configuration::Request,rosbot::Configuration::Response> config_srv("/config", responseCallback);
+    nh.advertiseService(config_srv);
     nh.subscribe(cmd_vel_sub);
     
     initBatteryPublisher();
@@ -192,23 +374,41 @@ int main()
     initVelocityPublisher();
     initRangePublisher();
     initJointStatePublisher();
+    initImuPublisher();
+    initButtonPublisher();
+
+    nh.spinOnce();
 
 #if defined(MEMORY_DEBUG_INFO)
     print_debug_info();
 #endif /* MEMORY_DEBUG_INFO */ 
 
-    for(int i=0;i<4;i++)
-    {
-        VL53L0X * sensor = distance_sensors->getSensor(i);
-        sensor->setTimeout(50); 
-        sensor->startContinuous();
-    }
     int spin_result;
     uint32_t spin_count=1;
     uint64_t time_old = Kernel::get_ms_count();
 
     while (1)
     {
+        if(button1_publish_flag)
+        {
+            button1_publish_flag = false;
+            if(!button1)
+            {
+                button_msg.data = 1;
+                button_pub->publish(&button_msg);
+            }
+        }
+
+        if(button2_publish_flag)
+        {
+            button2_publish_flag = false;
+            if(!button2)
+            {
+                button_msg.data = 2;
+                button_pub->publish(&button_msg);
+            }
+        }
+
         if (spin_count % 5 == 0) /// cmd_vel, odometry, joint_states
         {
             uint64_t time_new = Kernel::get_ms_count();
@@ -231,11 +431,11 @@ int main()
 
         if(spin_count % 50 == 0)
         {
-            battery_state.voltage = readVoltage();
+            battery_state.voltage = rosbot_sensors::readVoltage();
             battery_pub->publish(&battery_state);
         }
 
-        if(spin_count % 20 == 0) // ~ 5 HZ
+        if(spin_count % 20 == 0 && distance_sensors_enabled) // ~ 5 HZ
         {
             uint16_t range;
             ros::Time t = nh.now();
@@ -244,11 +444,25 @@ int main()
                 range = distance_sensors->getSensor(i)->readRangeContinuousMillimeters(false);
                 range_msg[i].header.stamp = t;
                 range_msg[i].range = (range != 65535) ? (float)range/1000.0f : -1.0f;
-                range_msg[i].header.frame_id = range_id[i];
                 range_pub[i]->publish(&range_msg[i]);
             }
         }
         
+        osEvent evt = rosbot_sensors::imu_sensor_mail_box.get(0);
+
+        if(evt.status == osEventMail)
+        {
+            rosbot_sensors::imu_meas_t * message = (rosbot_sensors::imu_meas_t*)evt.value.p;
+
+            quaternion_msg.header.stamp = nh.now();
+            quaternion_msg.quaternion.x = message->qx;
+            quaternion_msg.quaternion.y = message->qy;
+            quaternion_msg.quaternion.z = message->qz;
+            quaternion_msg.quaternion.w = message->qw;
+            rosbot_sensors::imu_sensor_mail_box.free(message);
+            imu_pub->publish(&quaternion_msg);
+        }
+
         spin_result = nh.spinOnce();
         if(spin_result != ros::SPIN_OK)
         {

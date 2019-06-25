@@ -165,7 +165,7 @@ To debug:
 * compile and flash DEBUG firmware
 * `CTRL + SHIFT + D` and click on `start debug` button
 
-## ROS interface
+## rosserial interface
 
 To use this firmware you have to disable communication with Husarion Cloud. On your SBC run:
 
@@ -177,7 +177,7 @@ and reboot the device.
 To start rosserial communication run:
 
 ```bash
-$ rosrun rosserial_node serial_node.py.py _port:=<SBC_port_name> _baud:=230400
+$ rosrun rosserial_node serial_node.py.py _port:=<SBC_port_name> _baud:=<port_baudrate>
 ```
 
 `<SBC_port_name>`:
@@ -185,11 +185,38 @@ $ rosrun rosserial_node serial_node.py.py _port:=<SBC_port_name> _baud:=230400
 - `/dev/serial0` for Raspberry Pi
 - `/dev/ttyS4` for UpBoard
 
-The baudrate can be adjusted for particular SBC, however it should be above `115200` to achieve smooth communication. You can change baudrate in this firmware by editing following line in `mbed_app.json`:
+`<port_baudrate>`:
+- `230400` for UpBoard and Raspberry Pi
+- `500000` for Asus Tinker Board
+
+The baudrate can be adjusted for particular SBC, however it should be above `115200` to achieve smooth communication. The default value for this firmware is `230400`.
+
+You can build firmware for the another baudrate changing only one line in `mbed_app.json`:
 
 ```json
-    "rosserial-mbed.baudrate": 230400,
+"rosserial-mbed.baudrate": 500000,
 ```
+
+The following `rosserial.launch` file can be used to start roscore and rosserial_python communication:
+
+```xml
+<launch>
+  <arg name="serial_port" default="/dev/ttyUSB0"/>
+  <arg name="serial_baudrate" default="230400"/>
+  <node pkg="rosserial_python" type="serial_node.py" name="serial_node" output="screen">
+    <param name="port" value="$(arg serial_port)"/>
+    <param name="baud" value="$(arg serial_baudrate)"/>
+  </node>
+</launch>
+```
+
+Usage for Asus Tinker Board:
+
+```bash
+$ roslaunch rosserial.launch serial_port:=/dev/ttyS1 serial_baudrate:=500000
+```
+
+## ROS communication
 
 ROSbot subscribes to:
 
@@ -205,7 +232,50 @@ ROSbot publishes to:
 * `/range/rl` with message type `sensor_msgs/Range`
 * `/range/rr` with message type `sensor_msgs/Range`
 * `/joint_states` with message type `sensor_msgs/JointState`
+* `/imu` with message type `geometry_msgs/QuaternionStamped`
+* `/buttons` with message type `std_msgs/UInt8`
 
+ROSbot provides service server:
+* `/config` with custom message type `rosbot/Configuration` 
+
+```bash
+$ rossrv show rosbot/Configuration 
+string command
+string data
+---
+uint8 SUCCESS=0
+uint8 FAILURE=1
+uint8 COMMAND_NOT_FOUND=2
+string data
+uint8 result
+```
+
+In order to use it you have to create package named `rosbot` with service `Configuration.srv` and compile it. You can learn how to do it here:
+http://wiki.ros.org/ROS/Tutorials/CreatingMsgAndSrv.
+
+At the moment following commands are available:
+
+* `SLED` - SET LED:
+
+    To set LED2 on run:
+    ```bash
+    $ rosservice call /config "command: 'SLED'
+    data: '2 1'" 
+    ```
+*  `EIMU` - ENABLE IMU:
+
+    To enable IMU MPU9250 run:
+    ```bash
+    $ rosservice call /config "command: 'EIMU'
+    data: '1'" 
+    ```
+* `EDSE` - ENABLE DISTANCE SENSORS:
+    
+    To enable VL53LX0 distance sensors run:
+    ```bash
+    $ rosservice call /config "command: 'EDSE'
+    data: '1'" 
+    ```
 ## Versioning
 
 The project uses [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/husarion/rosbot-firmware-new/tags). 

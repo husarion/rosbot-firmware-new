@@ -1,4 +1,4 @@
-#include <test/laser-sensors-dev.h>
+#include <test/main-dev.h>
 
 int main()
 {
