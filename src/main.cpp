@@ -1,5 +1,5 @@
 /** @file main.cpp
- * ROSbot firmware - 25th of June 2019 
+ * ROSbot firmware - 27th of June 2019 
  */
 #include <mbed.h>
 #include <RosbotDrive.h>
@@ -18,6 +18,8 @@
 #include <rosbot/Configuration.h>
 #include <map>
 #include <string>
+
+#define BATTERY_VOLTAGE_LOW 10.8
 
 geometry_msgs::Twist current_vel;
 sensor_msgs::JointState joint_states;
@@ -40,6 +42,7 @@ rosbot_kinematics::RosbotOdometry_t odometry;
 RosbotDrive * driver;
 MultiDistanceSensor * distance_sensors;
 volatile bool distance_sensors_enabled = false;
+volatile bool joint_states_enabled = false;
 
 DigitalOut led2(LED2,0);
 DigitalOut led3(LED3,0);
@@ -104,7 +107,7 @@ static void initBatteryPublisher()
 
 static void initPosePublisher()
 {
-    pose.header.frame_id = "rosbot";
+    pose.header.frame_id = "odom";
     pose.pose.position.x = 0;
     pose.pose.position.y = 0;
     pose.pose.position.z = 0;
@@ -173,6 +176,8 @@ public:
     uint8_t setLed(const char *datain, const char **dataout);
     uint8_t enableImu(const char *datain, const char **dataout);
     uint8_t enableDistanceSensors(const char *datain, const char **dataout);
+    uint8_t enableJointStates(const char *datain, const char **dataout);
+    uint8_t resetOdom(const char *datain, const char **dataout);
 
 private:
     ConfigFunctionality();
@@ -181,7 +186,8 @@ private:
     static const char SLED_COMMAND[];
     static const char EIMU_COMMAND[];
     static const char EDSE_COMMAND[];
-    static const char DATA_OUT_NULL[];
+    static const char EJSM_COMMAND[];
+    static const char RODOM_COMMAND[];
     map<std::string, configuration_srv_fun_t> _commands;
 };
 
@@ -190,13 +196,16 @@ ConfigFunctionality * ConfigFunctionality::_instance=NULL;
 const char ConfigFunctionality::SLED_COMMAND[]="SLED";
 const char ConfigFunctionality::EIMU_COMMAND[]="EIMU";
 const char ConfigFunctionality::EDSE_COMMAND[]="EDSE";
-const char ConfigFunctionality::DATA_OUT_NULL[]="No data";
+const char ConfigFunctionality::EJSM_COMMAND[]="EJSM";
+const char ConfigFunctionality::RODOM_COMMAND[]="RODOM";
 
 ConfigFunctionality::ConfigFunctionality()
 {
     _commands[SLED_COMMAND] = &ConfigFunctionality::setLed;
     _commands[EIMU_COMMAND] = &ConfigFunctionality::enableImu;
     _commands[EDSE_COMMAND] = &ConfigFunctionality::enableDistanceSensors;
+    _commands[EJSM_COMMAND] = &ConfigFunctionality::enableJointStates;
+    _commands[RODOM_COMMAND] = &ConfigFunctionality::resetOdom;
 }
 
 ConfigFunctionality::configuration_srv_fun_t ConfigFunctionality::findFunctionality(const char *command)
@@ -207,14 +216,35 @@ ConfigFunctionality::configuration_srv_fun_t ConfigFunctionality::findFunctional
     else
         return NULL;
 }
+
+uint8_t ConfigFunctionality::resetOdom(const char *datain, const char **dataout)
+{
+    *dataout = NULL;
+    rosbot_kinematics::resetRosbotOdometry(driver,&odometry);
+    return rosbot::Configuration::Response::SUCCESS;
+}
+
 uint8_t ConfigFunctionality::enableImu(const char *datain, const char **dataout)
 {
     int en;
-    *dataout = DATA_OUT_NULL;
+    *dataout = NULL;
     if(sscanf(datain,"%d",&en) == 1)
     {
-        rosbot_sensors::enableImu(en);
-        rosbot::Configuration::Response::SUCCESS; 
+        events::EventQueue * q = mbed_event_queue();
+        q->call(Callback<void(int)>(&rosbot_sensors::enableImu),en);
+        return rosbot::Configuration::Response::SUCCESS; 
+    }
+    return rosbot::Configuration::Response::FAILURE;
+}
+
+uint8_t ConfigFunctionality::enableJointStates(const char *datain, const char **dataout)
+{
+    int en;
+    *dataout = NULL;
+    if(sscanf(datain,"%d",&en) == 1)
+    {
+        joint_states_enabled = (en == 0 ? false : true);
+        return rosbot::Configuration::Response::SUCCESS; 
     }
     return rosbot::Configuration::Response::FAILURE;
 }
@@ -222,7 +252,7 @@ uint8_t ConfigFunctionality::enableImu(const char *datain, const char **dataout)
 uint8_t ConfigFunctionality::enableDistanceSensors(const char *datain, const char **dataout)
 {
     int en;
-    *dataout = DATA_OUT_NULL;
+    *dataout = NULL;
     if(sscanf(datain,"%d",&en) == 1)
     {
         if(en == 0)
@@ -252,7 +282,7 @@ uint8_t ConfigFunctionality::enableDistanceSensors(const char *datain, const cha
 uint8_t ConfigFunctionality::setLed(const char *datain, const char **dataout)
 {
     int led_num, led_state;
-    *dataout = DATA_OUT_NULL;
+    *dataout = NULL;
     if(sscanf(datain,"%d %d", &led_num, &led_state) == 2)
     {
         switch(led_num)
@@ -349,7 +379,7 @@ int main()
     driver->enablePidReg(true);
 
     events::EventQueue * q = mbed_event_queue();
-    rosbot_sensors::initBatteryWatchdog(q,5,8.0);
+    rosbot_sensors::initBatteryWatchdog(q,5,BATTERY_VOLTAGE_LOW);
 
     button1.mode(PullUp);
     button2.mode(PullUp);
@@ -358,7 +388,7 @@ int main()
 
     nh.initNode();
 
-    if(distance_sensors->init()!=4)
+    if(distance_sensors->init(400000)!=4)
         nh.logerror("VL53L0X sensros initialisation failure!");
 
     if(rosbot_sensors::initImu()!=INV_SUCCESS)
@@ -419,14 +449,16 @@ int main()
             pose_pub->publish(&pose);
             vel_pub->publish(&current_vel);
 
-            pos[0] = odometry.wheel_FL_ang_pos;
-            pos[1] = odometry.wheel_FR_ang_pos;
-            pos[2] = odometry.wheel_RL_ang_pos;
-            pos[3] = odometry.wheel_RR_ang_pos;
-
-            joint_states.position = pos;
-            joint_states.header.stamp = pose.header.stamp; 
-            joint_state_pub->publish(&joint_states);
+            if(joint_states_enabled)
+            {
+                pos[0] = odometry.wheel_FL_ang_pos;
+                pos[1] = odometry.wheel_FR_ang_pos;
+                pos[2] = odometry.wheel_RL_ang_pos;
+                pos[3] = odometry.wheel_RR_ang_pos;
+                joint_states.position = pos;
+                joint_states.header.stamp = pose.header.stamp; 
+                joint_state_pub->publish(&joint_states);
+            }
         }
 
         if(spin_count % 50 == 0)

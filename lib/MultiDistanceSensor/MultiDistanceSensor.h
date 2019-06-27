@@ -18,7 +18,7 @@ typedef struct SensorsMeasurement
 class MultiDistanceSensor
 {
 public:
-    int init();
+    int init(int freq=100000);
     void shutdownSensors();
     VL53L0X *getSensor(int num);
     static MultiDistanceSensor *getInstance(const Sensors_pin_def_t *pin_def = NULL);

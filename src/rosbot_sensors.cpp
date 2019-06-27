@@ -87,28 +87,28 @@ const Sensors_pin_def_t SENSORS_PIN_DEF={
 
 InterruptIn imu_int(SENS2_PIN1);
 
-Mail<imu_meas_t, 5> imu_sensor_mail_box;
+Mail<imu_meas_t, 10> imu_sensor_mail_box;
 
 static MPU9250_DMP imu;
-static Mutex imu_mutex;
 
 void imuCallback()
 {
-    imu_mutex.lock();
     // Use dmpUpdateFifo to update the ax, gx, mx, etc. values
-    if (imu.dmpUpdateFifo() == INV_SUCCESS)
+    if(imu.fifoAvailable() > 0)
     {
-        if(!imu_sensor_mail_box.full())
+        if (imu.dmpUpdateFifo() == INV_SUCCESS)
         {
-            imu_meas_t * new_msg = imu_sensor_mail_box.alloc();
-            new_msg->qx = imu.calcQuat(imu.qx);   
-            new_msg->qy = imu.calcQuat(imu.qy);   
-            new_msg->qz = imu.calcQuat(imu.qz);   
-            new_msg->qw = imu.calcQuat(imu.qw);
-            imu_sensor_mail_box.put(new_msg);
+            if(!imu_sensor_mail_box.full())
+            {
+                imu_meas_t * new_msg = imu_sensor_mail_box.alloc();
+                new_msg->qx = imu.calcQuat(imu.qx);   
+                new_msg->qy = imu.calcQuat(imu.qy);   
+                new_msg->qz = imu.calcQuat(imu.qz);   
+                new_msg->qw = imu.calcQuat(imu.qw);
+                imu_sensor_mail_box.put(new_msg);
+            }
         }
     }
-    imu_mutex.unlock();
 }
 
 int initImu()
@@ -152,20 +152,10 @@ int initImu()
     return err;
 }
 
-void enableImu(bool en)
+void enableImu(int en)
 {
-    imu_mutex.lock();
-        if(en)
-        {
-            imu.dmpState(1);
-            imu.enableInterrupt(1);
-        }
-        else
-        {
-            imu.dmpState(0);
-            imu.enableInterrupt(0);
-        }
-    imu_mutex.unlock();
+    imu.dmpState(en);
+    imu.enableInterrupt(en);
 }
 #pragma endregion /* IMU_REGION */
 

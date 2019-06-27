@@ -264,15 +264,15 @@ void RosbotDrive::regulatorLoop()
     //TODO: Add acceleration and deacceleration cotrol and fault handling
     uint64_t sleepTime;
     int32_t distance;
-    double pidout,tmp;
+    float pidout,tmp;
     while (1)
     {
         sleepTime = Kernel::get_ms_count() + _pid_params.dt_ms;
-        tmp = _wheel_coefficient * 1000.0 / _pid_params.dt_ms; // TODO: update with wheel_coefficient
+        tmp = _wheel_coefficient1 * 1000.0f / _pid_params.dt_ms; // TODO: update with wheel_coefficient
         FOR(ROSBOT_DRIVE_TYPE)
         {
             distance = _encoder[i]->getCount();
-            _cspeed_mps[i] = (double)(distance - _cdistance[i])*tmp;
+            _cspeed_mps[i] = (float)(distance - _cdistance[i])*tmp;
             _cdistance[i] = distance;
             _error[i] = _tspeed_mps[i]-_cspeed_mps[i];
         }
@@ -280,7 +280,7 @@ void RosbotDrive::regulatorLoop()
         {
             FOR(ROSBOT_DRIVE_TYPE)
             {
-                pidout = arm_pid_f32(_pid_instance[i],(float)_error[i]);
+                pidout = arm_pid_f32(_pid_instance[i],_error[i]);
                 _pidout[i] = (pidout > _pid_params.out_max ? _pid_params.out_max :(pidout < _pid_params.out_min ? _pid_params.out_min : pidout));
                 _mot[i]->setPower(_pidout[i]);  
             } 
@@ -310,7 +310,12 @@ void RosbotDrive::updateTargetSpeed(const NewTargetSpeed_t * new_speed)
 
 float RosbotDrive::getDistance(RosbotMotNum mot_num)
 {
-    return _wheel_coefficient * _cdistance[mot_num];
+    return (float)_wheel_coefficient1 * _cdistance[mot_num];
+}
+
+float RosbotDrive::getAngularPos(RosbotMotNum mot_num)
+{
+    return (float)_wheel_coefficient2 * _cdistance[mot_num];
 }
 
 int32_t RosbotDrive::getEncoderTicks(RosbotMotNum mot_num)
@@ -325,7 +330,8 @@ float RosbotDrive::getSpeed(RosbotMotNum mot_num)
 
 void RosbotDrive::updateWheelParams(const RosbotWheel_t * params)
 {
-    _wheel_coefficient = params->tyre_deflection * 2 * M_PI * params->radius / (params->gear_ratio * params->encoder_cpr);
+    _wheel_coefficient1 =  2 * M_PI * params->radius / (params->gear_ratio * params->encoder_cpr * params->tyre_deflection);
+    _wheel_coefficient2 =  2 * M_PI / (params->gear_ratio * params->encoder_cpr);
 }
 
 void RosbotDrive::updatePidParams(const RosbotDrivePid_t * params, bool reset)
@@ -390,7 +396,7 @@ float RosbotDrive::getSpeed(RosbotMotNum mot_num, SpeedMode mode)
     switch(mode)
     {
         case TICSKPS:
-            return _cspeed_mps[mot_num]/_wheel_coefficient;
+            return _cspeed_mps[mot_num]/_wheel_coefficient1;
         case MPS:
             return _cspeed_mps[mot_num];
         case DUTY_CYCLE:

@@ -28,3 +28,17 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
 
 ### Changed
   - VL53LX0 and MPU9250 are disabled on default. They can be enabled using `/config` service server.
+
+## [0.3.0] - 2019-06-27
+
+### Added
+ - new commands:
+   * `EJSM` - ENABLE JOINT STATES MESSAGES
+   * `RODOM` - RESET ODOMETRY
+
+### Fixed
+ - fixed odometry for 4-wheeled robot
+  
+### Changed
+- VL53L0X i2c interface frequency set at 400kHz
+- BATTERY LOW indication set at 10.8V

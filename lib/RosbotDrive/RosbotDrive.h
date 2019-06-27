@@ -89,6 +89,7 @@ public:
     float getSpeed(RosbotMotNum mot_num);
     float getSpeed(RosbotMotNum mot_num, SpeedMode mode);
     float getDistance(RosbotMotNum mot_num);
+    float getAngularPos(RosbotMotNum mot_num);
     void resetDistance();
     int32_t getEncoderTicks(RosbotMotNum mot_num);
     void updateTargetSpeed(const NewTargetSpeed_t * new_speed);
@@ -104,12 +105,13 @@ private:
     volatile bool _pid_state;
     RosbotDrivePid_t _pid_params;
     uint8_t _polarity;
-    volatile double _tspeed_mps[4];
-    volatile double _cspeed_mps[4];
+    volatile float _tspeed_mps[4];
+    volatile float _cspeed_mps[4];
     volatile int32_t _cdistance[4];
-    volatile double _error[4];
+    volatile float _error[4];
     volatile float _pidout[4];
-    double _wheel_coefficient;
+    double _wheel_coefficient1;
+    double _wheel_coefficient2;
     DRV8848 * _mot_driver[2];
     DCMotor * _mot[4]; 
     Encoder * _encoder[4];

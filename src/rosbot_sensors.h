@@ -31,10 +31,9 @@ typedef struct
     float  qz;
     float  qw;
 } imu_meas_t;
-extern Mail<imu_meas_t, 5> imu_sensor_mail_box;
+extern Mail<imu_meas_t, 10> imu_sensor_mail_box;
 int initImu();
-void imuCallback();
-void enableImu(bool en);
+void enableImu(int en);
 }
 
 #endif /* __ROSBOT_SENSORS_H__ */

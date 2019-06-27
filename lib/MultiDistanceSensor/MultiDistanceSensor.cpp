@@ -46,9 +46,10 @@ MultiDistanceSensor::~MultiDistanceSensor()
     delete _t;
 }
 
-int MultiDistanceSensor::init()
+int MultiDistanceSensor::init(int freq)
 {
     int result=0;
+    _i2c->frequency(freq);
     for(int i=0;i<4;i++)
     {
         _sensors[i]->setTimeout(500);
