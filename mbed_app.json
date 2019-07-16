@@ -25,10 +25,7 @@
             "rosbot-drive.set-num-wheels": 4,
             "mpu9250-lib.i2c-sda": "SENS2_PIN4",
             "mpu9250-lib.i2c-scl": "SENS2_PIN3",
-            "mpu9250-lib.i2c-frequency": 100000,
-            "target.mbed_app_start":"0x08010000",
-            "target.mbed_rom_start":"0x08000000",
-            "target.mbed_rom_size":"0x100000"
+            "mpu9250-lib.i2c-frequency": 100000
         }
     }
 }

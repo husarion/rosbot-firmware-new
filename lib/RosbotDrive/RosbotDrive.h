@@ -38,6 +38,8 @@ typedef struct RosobtDrivePid
     float kd;
     float out_min;
     float out_max;
+    float a_max;
+    float speed_max;
     uint32_t dt_ms;
 }RosbotDrivePid_t;
 
@@ -103,6 +105,7 @@ private:
     RosbotDrive(const RosbotDrive_params_t * params);
     volatile RosbotDriveStates _state;
     volatile bool _pid_state;
+    volatile bool _regulator_state;
     RosbotDrivePid_t _pid_params;
     uint8_t _polarity;
     volatile float _tspeed_mps[4];
@@ -112,6 +115,7 @@ private:
     volatile float _pidout[4];
     double _wheel_coefficient1;
     double _wheel_coefficient2;
+    float _pid_interval_s;
     DRV8848 * _mot_driver[2];
     DCMotor * _mot[4]; 
     Encoder * _encoder[4];

@@ -21,8 +21,8 @@
 
 #else
 
-#define ROBOT_WIDTH 0.195
-#define DIAMETER_MODIFICATOR 1.24
+#define ROBOT_WIDTH 0.215         // 0.22 0.195
+#define DIAMETER_MODIFICATOR 1.164 // 1.24, 1.09
 #define TYRE_DEFLATION 1.042      // theoretical distance / real distance
 #define GEAR_RATIO 34.014
 #define ENCODER_CPR 48

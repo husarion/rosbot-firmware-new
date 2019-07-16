@@ -16,7 +16,6 @@
         "device_has_add": ["ANALOGOUT", "TRNG", "CAN", "FLASH", "MPU"],
         "release_versions": ["5"],
         "device_name": "STM32F407ZG",
-        "bootloader_supported": true,
-        "OUTPUT_EXT": "hex"
+        "bootloader_supported": true
     }
 }

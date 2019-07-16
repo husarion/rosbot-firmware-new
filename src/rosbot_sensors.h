@@ -21,18 +21,23 @@
 
 namespace rosbot_sensors{
 
-void initBatteryWatchdog(events::EventQueue * q, int frequency, float threshold);
 extern const Sensors_pin_def_t SENSORS_PIN_DEF;
-float readVoltage();
+
 typedef struct 
 {
-    float  qx;
-    float  qy;
-    float  qz;
-    float  qw;
-} imu_meas_t;
+    float orientation[4];
+    float angular_velocity[3];
+    float linear_velocity[3];
+}imu_meas_t;
+
+float updateBatteryWatchdog();
+
 extern Mail<imu_meas_t, 10> imu_sensor_mail_box;
+
 int initImu();
+
+int resetImu();
+
 void enableImu(int en);
 }
 

@@ -119,6 +119,8 @@ const RosbotDrivePid_t RosbotDrive::DEFAULT_PID_PARAMS = {
     .kd = 0.015,
     .out_min = -1.0,
     .out_max = 1.0,
+    .a_max = 5.0,
+    .speed_max = 1.5,
     .dt_ms = 10};
 
 #if ROSBOT_DRIVE_TYPE == 4
@@ -151,6 +153,7 @@ int RosbotDrive::getRosbotDriveType()
 RosbotDrive::RosbotDrive(const RosbotDrive_params_t * params)
 : _state(UNINIT)
 , _pid_state(false)
+, _regulator_state(true)
 , _pid_params(params->pid_params)
 , _polarity(params->polarity)
 {
@@ -171,6 +174,7 @@ RosbotDrive::RosbotDrive(const RosbotDrive_params_t * params)
         _cdistance[i]=0;
     }
     updateWheelParams(&params->wheel_params);
+    _pid_interval_s = params->pid_params.dt_ms/1000.0f;
 }
 
 RosbotDrive * RosbotDrive::getInstance(const RosbotDrive_params_t * params)
@@ -213,6 +217,7 @@ void RosbotDrive::init(int freq)
         _pid_instance[i]->Kd = _pid_params.kd;
         arm_pid_init_f32(_pid_instance[i],1);
     }
+
     _mot_driver[0]->enable(true);
     if(ROSBOT_DRIVE_TYPE==4)
         _mot_driver[1]->enable(true);
@@ -259,12 +264,13 @@ void RosbotDrive::enable(bool en)
     }
 }
 
+#if 0 // old implementation
 void RosbotDrive::regulatorLoop()
 {
     //TODO: Add acceleration and deacceleration cotrol and fault handling
     uint64_t sleepTime;
     int32_t distance;
-    float pidout,tmp;
+    float pidout,tmp, cspeed_mps;
     while (1)
     {
         sleepTime = Kernel::get_ms_count() + _pid_params.dt_ms;
@@ -272,14 +278,16 @@ void RosbotDrive::regulatorLoop()
         FOR(ROSBOT_DRIVE_TYPE)
         {
             distance = _encoder[i]->getCount();
-            _cspeed_mps[i] = (float)(distance - _cdistance[i])*tmp;
+            cspeed_mps = (float)(distance - _cdistance[i])*tmp;
+            _caccel_mps2[i] = (cspeed_mps - _cspeed_mps[i])/(1000.0f / _pid_params.dt_ms);
+            _cspeed_mps[i] = cspeed_mps; 
             _cdistance[i] = distance;
-            _error[i] = _tspeed_mps[i]-_cspeed_mps[i];
         }
         if((_state == OPERATIONAL) && _pid_state)
         {
             FOR(ROSBOT_DRIVE_TYPE)
             {
+                _error[i] = _tspeed_mps[i]-_cspeed_mps[i];
                 pidout = arm_pid_f32(_pid_instance[i],_error[i]);
                 _pidout[i] = (pidout > _pid_params.out_max ? _pid_params.out_max :(pidout < _pid_params.out_min ? _pid_params.out_min : pidout));
                 _mot[i]->setPower(_pidout[i]);  
@@ -288,6 +296,53 @@ void RosbotDrive::regulatorLoop()
         ThisThread::sleep_until(sleepTime);
     }
 }
+#endif
+
+template <typename T> int sgn(T val) {
+    return (T(0) > val) ? -1 : 1 ;
+}
+
+void RosbotDrive::regulatorLoop()
+{
+    uint64_t sleepTime;
+    int32_t distance;
+    float pidout,a,b,tmp_tspeed;
+    while (1)
+    {
+        if(!_regulator_state)
+            return;
+        sleepTime = Kernel::get_ms_count() + _pid_params.dt_ms;
+        a = _wheel_coefficient1 / _pid_interval_s;
+        b = _pid_params.a_max * _pid_interval_s;
+        FOR(ROSBOT_DRIVE_TYPE)
+        {
+            distance = _encoder[i]->getCount();
+            _cspeed_mps[i] = (float)(distance - _cdistance[i])*a;
+            _cdistance[i] = distance;
+            if((_state == OPERATIONAL) && _pid_state)
+            {
+                float c = _tspeed_mps[i]-_cspeed_mps[i]; 
+                
+                if(fabs(c) > b)
+                    tmp_tspeed = _cspeed_mps[i] + sgn(c) * b;
+                else
+                    tmp_tspeed = _tspeed_mps[i];
+                
+                if(tmp_tspeed > _pid_params.speed_max)
+                    tmp_tspeed = _pid_params.speed_max;
+                else if(tmp_tspeed < -_pid_params.speed_max)
+                    tmp_tspeed = - _pid_params.speed_max;
+
+                _error[i] = tmp_tspeed-_cspeed_mps[i];
+                pidout = arm_pid_f32(_pid_instance[i],_error[i]);
+                _pidout[i] = (pidout > _pid_params.out_max ? _pid_params.out_max :(pidout < _pid_params.out_min ? _pid_params.out_min : pidout));
+                _mot[i]->setPower(_pidout[i]);  
+            }
+        }
+        ThisThread::sleep_until(sleepTime);
+    }
+}
+
 
 void RosbotDrive::updateTargetSpeed(const NewTargetSpeed_t * new_speed)
 {
@@ -336,7 +391,7 @@ void RosbotDrive::updateWheelParams(const RosbotWheel_t * params)
 
 void RosbotDrive::updatePidParams(const RosbotDrivePid_t * params, bool reset)
 {
-    _pid_state = false;
+    _regulator_state = false;
     _pid_params = *params;
     FOR(ROSBOT_DRIVE_TYPE)
     {
@@ -345,7 +400,8 @@ void RosbotDrive::updatePidParams(const RosbotDrivePid_t * params, bool reset)
         _pid_instance[i]->Kd = _pid_params.kd;
         arm_pid_init_f32(_pid_instance[i],reset);
     }
-    _pid_state = true;
+    _pid_interval_s = params->dt_ms/1000.0f;
+    _regulator_state = true;
 }
 
 void RosbotDrive::stop()
