@@ -39,6 +39,7 @@ typedef struct RosobtDrivePid
     float out_min;
     float out_max;
     float a_max;
+    float da_max;
     float speed_max;
     uint32_t dt_ms;
 }RosbotDrivePid_t;

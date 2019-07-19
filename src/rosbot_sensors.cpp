@@ -166,7 +166,7 @@ void enableImu(int en)
     imu_state=en;
 }
 
-int restartImu()
+int resetImu()
 {
     if(!imu_state)
         return INV_ERROR;

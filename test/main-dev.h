@@ -19,7 +19,6 @@
 #include <map>
 #include <string>
 
-
 #define MAIN_LOOP_INTERVAL_MS 10
 
 geometry_msgs::Twist current_vel;
@@ -187,6 +186,8 @@ public:
     uint8_t resetOdom(const char *datain, const char **dataout);
     uint8_t enableSpeedWatchdog(const char *datain, const char **dataout);
     uint8_t getAngle(const char *datain, const char **dataout);
+    uint8_t resetImu(const char *datain, const char **dataout);
+    uint8_t setMotorsAccelDeaccel(const char *datain, const char **dataout);
 
 private:
     ConfigFunctionality();
@@ -198,8 +199,8 @@ private:
     static const char EJSM_COMMAND[];
     static const char RODOM_COMMAND[];
     static const char EWCH_COMMAND[];
-    // test
-    static const char GANG_COMMAND[];
+    static const char RIMU_COMMAND[];
+    static const char SMAD_COMMAND[];
     map<std::string, configuration_srv_fun_t> _commands;
 };
 
@@ -211,7 +212,8 @@ const char ConfigFunctionality::EDSE_COMMAND[]="EDSE";
 const char ConfigFunctionality::EJSM_COMMAND[]="EJSM";
 const char ConfigFunctionality::RODOM_COMMAND[]="RODOM";
 const char ConfigFunctionality::EWCH_COMMAND[]="EWCH";
-const char ConfigFunctionality::GANG_COMMAND[]="GANG";
+const char ConfigFunctionality::RIMU_COMMAND[]="RIMU";
+const char ConfigFunctionality::SMAD_COMMAND[]="SMAD";
 
 ConfigFunctionality::ConfigFunctionality()
 {
@@ -221,7 +223,7 @@ ConfigFunctionality::ConfigFunctionality()
     _commands[EJSM_COMMAND] = &ConfigFunctionality::enableJointStates;
     _commands[RODOM_COMMAND] = &ConfigFunctionality::resetOdom;
     _commands[EWCH_COMMAND] = &ConfigFunctionality::enableSpeedWatchdog;
-    _commands[GANG_COMMAND] = &ConfigFunctionality::getAngle;
+    _commands[RIMU_COMMAND] = &ConfigFunctionality::resetImu;
 }
 
 ConfigFunctionality::configuration_srv_fun_t ConfigFunctionality::findFunctionality(const char *command)
@@ -233,11 +235,27 @@ ConfigFunctionality::configuration_srv_fun_t ConfigFunctionality::findFunctional
         return NULL;
 }
 
-uint8_t ConfigFunctionality::getAngle(const char *datain, const char **dataout)
+uint8_t ConfigFunctionality::resetImu(const char *datain, const char **dataout)
 {
-    sprintf(_buffer,"robot angle pos: %.2f degrees",odometry.robot_angular_pos*180.0/M_PI);
-    *dataout = _buffer;
+    *dataout = NULL;
+    rosbot_sensors::resetImu();
     return rosbot::Configuration::Response::SUCCESS;
+}
+
+uint8_t ConfigFunctionality::setMotorsAccelDeaccel(const char *datain, const char **dataout)
+{
+    float accel, deaccel;
+    *dataout = NULL;
+    //TODO: zakres
+    if(sscanf(datain,"%f %f",&accel, deaccel) == 2)
+    {
+        RosobtDrivePid new_pid_params = RosbotDrive::DEFAULT_PID_PARAMS;
+        new_pid_params.a_max = accel;
+        new_pid_params.da_max = deaccel;
+        driver->updatePidParams(&new_pid_params,true);
+        return rosbot::Configuration::Response::SUCCESS; 
+    }
+    return rosbot::Configuration::Response::FAILURE;
 }
 
 uint8_t ConfigFunctionality::resetOdom(const char *datain, const char **dataout)
@@ -533,7 +551,6 @@ void test()
         {
             rosbot_sensors::imu_meas_t * message = (rosbot_sensors::imu_meas_t*)evt.value.p;
 
-            imu_msg.header.stamp = nh.now();
             imu_msg.header.stamp = nh.now();
             imu_msg.orientation.x = message->orientation[0];
             imu_msg.orientation.y = message->orientation[1];

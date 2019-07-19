@@ -1,9 +1,52 @@
 # ROSbot firmware
 The ROSbot mobile platform's microcontroller firmware. Written in C++ using [arm's Mbed OS framework](https://os.mbed.com/). 
 
-<p align="center">
-<img width="600px" src=".img/pro.jpg" alt="ROSBOT PRO"/>
-</p>
+
+```
+
+                                                                                 
+                          +hdhhyyssoo+//::-..````````                           
+                         -NNNNNNNmmNmNNNNNNmmmmddhhyyso+ooosso-                 
+                         -dNNNNNmddmNNNNNNmdmNNmdmmmmmmmyssssss.      .`        
+                          :ydmmNmmmmmNNNNNmmmNmddmmmmmmms++oooo.     -mo        
+                               `.--:+omNNNNNNNmmmmmmmmmmddddhh+      /m+        
+                                   dNNNNNNNNNNNNNNNmmmmh:h:          sm-        
+                                   /yhdmmmNNNNNmmmddhso- /+          dd`        
+                                       -.`.:o/```.``````  -         `mh         
+                                       `.             ``` `         :mo         
+                                        .          `                sm/         
+                           `:/+osyyyyyyhhys+.      `                dm:         
+                           ymmmmddhhddddddhhy.    `/               .Nm.         
+                          .dmNNmmNNNNNNNmyhhh/  .+s:`              /Nh          
+                          /mmmmmmmmdmmmddddddy/ys-```             /hh/          
+            ```````````...omNNmmmNNNNmmmdddddhy-...--``......````ohy`           
+       ://////s/----------smNNNNNNNNNNmmmddddh+:....:::::::-....:/-//:::-       
+     `+ooo++++++++++///:::/osyyyyyyyyyyyssooo+-:/:::o/-----:/:::::--:+hhy+`     
+    .ooooo+++++++++++++++++++++++++++++so+++++----. `` -`.``.----......``..     
+    .sooooooooooo+++++oooo++++++++++++++++/:::-`` . `` ````..-/ssddhdys+:.      
+    ymhoooooooooooooooooooo++++++++++++++/-..`````````````.-+hmmmmmddhhhdhs.    
+   smNNm+:/+oooooooooooooooooooooo++++++/--/syddddhyo/:.`./hmmmmdddhhoso-:sd:   
+  .mNNNN+oyysoo/-:/+ooooooooooooooooo++:/smmmmmmddhdhddyo/hmmmmdhhhy.:::.y:+d.  
+  -mmNNN: -:/osy:   `....---://++++++/:smNNmmmddhho:+/:oddmmNmmmddh` ``.:dh`h+  
+  .dmmNmy-`````     ```````ysmdhso-``:ymNNmmmhydy/ `+hd:-dmNNNNNmm: -...-dh.ho  
+   ommmNNms-......```````````-:/oss-.+dNmmmmmdmy. ```.:``+mmNNNNNm. .-``hdo/m:  
+    +dNNNNNNhyo+++/-...```````````` -odmmNNmNNm.`...`.oy//mmNNNNNm+.`.`+do`oy   
+     .ymNNNNNNNNNNmhhyyso+/:-.....``.+dmmmmmNNh. ..`.+mm/ymmNNNNmmho..hdo.oy`   
+      `-/osyhhdddhhhhhhhddddddhyyso+/:ommmmmmmd-  ``.sds:mhydNNNNNmd+///ohs.    
+                ``..-:/+ossyyhhhhhhhhhhmmmmmmmm/.+oo.`:-hhooyhmNNNNNNmmdy/`     
+                          ``.--:/+osyyhhmmmNmmmmo/+/.-+ds..----:::::--.`        
+                                   ``.-:+ydNNNNNmmddddh/.`                      
+                                        `.-/osyhyss+/.`                         
+                                                                              
+                                     _                  ___   _  _   
+                                    (_)                / _ \ | || |  
+             __   __ ___  _ __  ___  _   ___   _ __   | | | || || |_ 
+             \ \ / // _ \| '__|/ __|| | / _ \ | '_ \  | | | ||__   _|
+              \ V /|  __/| |   \__ \| || (_) || | | | | |_| |_  | |  
+               \_/  \___||_|   |___/|_| \___/ |_| |_|  \___/(_) |_|  
+```
+
+
 
 ## Prerequisites
 You need following tools:
@@ -54,7 +97,13 @@ $ cd mbed-os
 $ mbed update mbed-os-5.12.4
 ```
 
-After that you will need to set path to `mbed-os` directory in Mbed CLI. These way all your projects can use one instance of library (default configuration is to have separate instance of library for each project). Run:
+During Mbed OS installation you can be asked to install additional python libraries. Switch to `mbed-os` dir and run:
+
+```bash
+$ pip install -r requirements.txt --user
+```
+
+Set path to `mbed-os` directory in Mbed CLI. These way all your projects can use one instance of the library (default configuration is to have separate instance of library for each project). Run:
 
 ```bash
 $ mbed config -G MBED_OS_DIR <path to mbed-os>
@@ -93,16 +142,16 @@ Open Visual Studio Code, press `CTRL + SHIFT + P` and type `Git: Clone` in Comma
 You will be prompted to select your repo location. Choose `core2-mbed-workspace` directory.
 
 ### Updating project files
+Open `rosbot-firmware-new` in Visual Studio Code IDE. In `.vscode` directory find `settings.json` file and change the value of `C_cpp.default.compilerPath` with path to `arm-none-eabi-g++` location on your system:
 
-Open `settings.json` file from `.vscode` and change value of `C_cpp.default.compilerPath` with path to `arm-none-eabi-g++` location on your system:
-
+Example (Windows):
 ```json
 {
     "C_Cpp.default.compilerPath": "C:/Program Files (x86)/GNU Tools ARM Embedded/6 2017-q2-update/bin/arm-none-eabi-g++"
 }
 ```
 
-To update all dependencies go to `lib` directory and run:
+After that update all repository dependencies. In `rosbot-firmware-new/lib` directory run:
 
 ```bash
 $ mbed update master
@@ -113,10 +162,10 @@ $ mbed update master
 To build and flash your firmware press `CTRL + SHIFT + P` and type `Tasks: Run Task` in Command Pallete. Here is the list of available tasks: 
 * `BUILD (RELEASE)`
 * `BUILD (DEBUG)`
-* `FLASH FIRMWARE WHEN BOOTLOADER (RELEASE)`
-* `FLASH FIRMWARE WHEN BOOTLOADER (DEBUG)`
-* `FLASH FIRMWARE NO BOOTLOADER (RELEASE)`
-* `FLASH FIRMWARE NO BOOTLOADER (DEBUG)`
+* `FLASH FIRMWARE WHEN BOOTLOADER (RELEASE)`*
+* `FLASH FIRMWARE WHEN BOOTLOADER (DEBUG)`  *
+* `FLASH FIRMWARE NO BOOTLOADER (RELEASE)`  *
+* `FLASH FIRMWARE NO BOOTLOADER (DEBUG)`    *
 * `CREATE STATIC MBED-OS LIB (RELEASE)`
 * `CREATE STATIC MBED-OS LIB (DEBUG)`
 * `BUILD FROM STATIC LIB (RELEASE)`
@@ -124,17 +173,20 @@ To build and flash your firmware press `CTRL + SHIFT + P` and type `Tasks: Run T
 * `CLEAN DEBUG`
 * `CLEAN RELEASE`
 
+`*` *require ST-LINK programmer*
+
 You can add new tasks and customize existing ones by editing `task.json` file. 
 
 #### Building and uploading firmware (BOOTLOADER)
 
 The software bootloader allows the use of Husarion Cloud. You can find it in `TARGET_CORE2/bootloader_1_0_0_cortex.hex`. The instruction how to flash it can be found [here](https://husarion.com/manuals/core2/#updating-core2-bootloader).
 
-To build firmware use `BUILD (RELEASE)` or `BUILD (DEBUG)` task.
+To build firmware use `BUILD (RELEASE)` or `BUILD (DEBUG)` tasks.
 
-To flash firmware connect programmator to debug connector of CORE2 and use `FLASH FIRMWARE WHEN BOOTLOADER (RELEASE)` or `FLASH FIRMWARE WHEN BOOTLOADER (DEBUG)` task.
+To flash firmware connect ST-LINK to debug connector of CORE2 and use `FLASH FIRMWARE WHEN BOOTLOADER (RELEASE)` or `FLASH FIRMWARE WHEN BOOTLOADER (DEBUG)` task.
 
 #### Building and uploading firmware (NO BOOTLOADER)
+> Before proceeding with the following steps make sure you conducted mass erase of the memory and made all flash memory sectors are write unprotected.
 
 If you do not want use the bootloader just remove this lines from mbed_app.json:
 ```json
@@ -143,20 +195,37 @@ If you do not want use the bootloader just remove this lines from mbed_app.json:
     "target.mbed_rom_size":"0x100000"
 ```
 
-To build firmware use `BUILD (RELEASE)` or `BUILD (DEBUG)` task.
+To build firmware use `BUILD (RELEASE)` or `BUILD (DEBUG)` tasks.
 
-To flash firmware connect programmator to debug connector of CORE2 and use `FLASH FIRMWARE NO BOOTLOADER (RELEASE)` or `FLASH FIRMWARE NO BOOTLOADER (DEBUG)` task.
+To flash firmware connect ST-LINK to debug connector of CORE2 and use `FLASH FIRMWARE NO BOOTLOADER (RELEASE)` or `FLASH FIRMWARE NO BOOTLOADER (DEBUG)` task.
 
 #### Flashing firmware using `core2-flasher`
 
 ```bash
-./core2-flasher firmware.hex
+$ arm-none-eabi-objcopy -O ihex firmware.elf firmware.hex 
+$ ./core2-flasher firmware.hex
 ```
 
-You will find `firmware.hex` in `./BUILD/RELEASE` or `./BUILD/DEBUG`.
+You will find `firmware.elf` in `./BUILD/RELEASE` or `./BUILD/DEBUG`.
 
-> At the moment it is not possible to flash firmware using serial in RPI connector.
+Here you can learn where to find `core2-flasher` for your system:
+https://husarion.com/manuals/core2/#updating-core2-bootloader
 
+#### Flashing firmware using `stm32loader`
+https://github.com/byq77/stm32loader
+
+This tool allows you to upload firmware using RPi connector.
+
+If you have the bootloader the first two sectors are write protected. Before uploading new firmware you must unlock them (this will erase the bootloader):
+
+```bash
+$ sudo stm32loader -c <your_sbc> -u -W
+```
+
+To upload new firmware run:
+```bash
+$ sudo stm32loader -c <your_sbc> -e -v -w firmware.bin
+```
 ### Debug
 
 To debug:
@@ -171,8 +240,8 @@ To use this firmware you have to disable communication with Husarion Cloud. On y
 
 ```bash
 $ sudo systemctl disable husarnet-configurator
+$ sudo reboot
 ```
-and reboot the device.
 
 To start rosserial communication run:
 
@@ -232,7 +301,7 @@ ROSbot publishes to:
 * `/range/rl` with message type `sensor_msgs/Range`
 * `/range/rr` with message type `sensor_msgs/Range`
 * `/joint_states` with message type `sensor_msgs/JointState`
-* `/imu` with message type `geometry_msgs/QuaternionStamped`
+* `/mpu9250` with custom message type `rosbot/Imu`
 * `/buttons` with message type `std_msgs/UInt8`
 
 ROSbot provides service server:
@@ -250,11 +319,8 @@ string data
 uint8 result
 ```
 
-In order to use it you have to create package named `rosbot` with service `Configuration.srv` and compile it. You can learn how to do it here:
-http://wiki.ros.org/ROS/Tutorials/CreatingMsgAndSrv.
 
 At the moment following commands are available:
-
 * `SLED` - SET LED:
 
     To set LED2 on run:
@@ -269,6 +335,13 @@ At the moment following commands are available:
     $ rosservice call /config "command: 'EIMU'
     >data: '1'" 
     ```
+* `RIMU` - RESET IMU (for Kalman related odometry)
+
+    To reset IMU MPU9250 run:
+    ```bash
+    $ rosservice call /config "command: 'RIMU'
+    >data: ''"
+    ``` 
 * `EDSE` - ENABLE DISTANCE SENSORS:
     
     To enable VL53LX0 distance sensors run:
@@ -283,7 +356,6 @@ At the moment following commands are available:
     $ rosservice call /config "command: `EJSM`
     >data: '1'"
     ```
-
 * `RODOM` - RESET ODOMETRY
 
     To reset odometry run:
@@ -291,6 +363,15 @@ At the moment following commands are available:
     $ rosservice call /config "command: `RODOM`
     >data: ''"
     ```
+
+In order to use it you have to download the package `rosbot` that can be found [here](https://github.com/adamkrawczyk/rosbot). Clone it to your `ros_ws/src` folder and run `catkin_make` to build it. Besides custom messages the package contains also a ready to use **Extended Kalman Filter** that combines both the imu and encoders measurements to better approximate the ROSbot position and orientation. The filtered output is published to `odom` topic.
+
+To launch the rosserial communication and Kalman filter run:
+```bash
+$ roslaunch rosbot all.launch
+```
+
+If you have **ROSbot 2.0 PRO** you have to modify the `rosbot/launch/rosserial_to_roscore.launch` file like described in `rosserial interface` section. 
 
 ## Versioning
 

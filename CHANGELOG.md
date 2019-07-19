@@ -42,3 +42,25 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
 ### Changed
 - VL53L0X i2c interface frequency set at 400kHz
 - BATTERY LOW indication set at 10.8V
+
+## [0.4.0] - 2019-07-19
+
+### Added
+  - new command:
+    * `RIMU` - RESET IMU
+    * `EWCH` - ENABLE SPEED WATCHDOG 
+  - speed watchdog (by default enabled), that sets speed to 0 if there is no speed update of `/cmd_vel` for 1s
+  - support for EKF
+
+### Changed
+  - `imu` topic changed to `mpu9250` with message type `rosbot/Imu`
+
+### Fixed
+  - more frequent odometry update
+  - odometry coefficient are slightly better adjusted
+  - overall firmware's stability is improved
+  - max target speed limited to 1.5m/s
+
+### TODO
+  - forward regulator controlling acceleration and deacceleration
+  - virtual bumper using VL53L0X proximity sensors

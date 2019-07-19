@@ -119,7 +119,8 @@ const RosbotDrivePid_t RosbotDrive::DEFAULT_PID_PARAMS = {
     .kd = 0.015,
     .out_min = -1.0,
     .out_max = 1.0,
-    .a_max = 5.0,
+    .a_max = 6.0,
+    .da_max = 8.0,
     .speed_max = 1.5,
     .dt_ms = 10};
 
@@ -302,47 +303,72 @@ template <typename T> int sgn(T val) {
     return (T(0) > val) ? -1 : 1 ;
 }
 
+static inline bool isacc(float * tspeed, float * cspeed)
+{
+    if (sgn(*tspeed) == sgn(*cspeed))
+        return (fabs(*tspeed)>fabs(*cspeed));
+    else
+        return false;
+}
+
 void RosbotDrive::regulatorLoop()
 {
     uint64_t sleepTime;
     int32_t distance;
-    float pidout,a,b,tmp_tspeed;
+    float pidout, a, b, c, d, tmp_tspeed = 0.0;
     while (1)
     {
-        if(!_regulator_state)
-            return;
-        sleepTime = Kernel::get_ms_count() + _pid_params.dt_ms;
-        a = _wheel_coefficient1 / _pid_interval_s;
-        b = _pid_params.a_max * _pid_interval_s;
-        FOR(ROSBOT_DRIVE_TYPE)
+        if (_regulator_state)
         {
-            distance = _encoder[i]->getCount();
-            _cspeed_mps[i] = (float)(distance - _cdistance[i])*a;
-            _cdistance[i] = distance;
-            if((_state == OPERATIONAL) && _pid_state)
-            {
-                float c = _tspeed_mps[i]-_cspeed_mps[i]; 
-                
-                if(fabs(c) > b)
-                    tmp_tspeed = _cspeed_mps[i] + sgn(c) * b;
-                else
-                    tmp_tspeed = _tspeed_mps[i];
-                
-                if(tmp_tspeed > _pid_params.speed_max)
-                    tmp_tspeed = _pid_params.speed_max;
-                else if(tmp_tspeed < -_pid_params.speed_max)
-                    tmp_tspeed = - _pid_params.speed_max;
 
-                _error[i] = tmp_tspeed-_cspeed_mps[i];
-                pidout = arm_pid_f32(_pid_instance[i],_error[i]);
-                _pidout[i] = (pidout > _pid_params.out_max ? _pid_params.out_max :(pidout < _pid_params.out_min ? _pid_params.out_min : pidout));
-                _mot[i]->setPower(_pidout[i]);  
+            sleepTime = Kernel::get_ms_count() + _pid_params.dt_ms;
+            a = _wheel_coefficient1 / _pid_interval_s;
+            // b = _pid_params.a_max * _pid_interval_s;
+            // c = _pid_params.da_max * _pid_interval_s;
+            FOR(ROSBOT_DRIVE_TYPE)
+            {
+                distance = _encoder[i]->getCount();
+                _cspeed_mps[i] = (float)(distance - _cdistance[i]) * a;
+                _cdistance[i] = distance;
+
+                d = _tspeed_mps[i] - _cspeed_mps[i];
+                tmp_tspeed = _tspeed_mps[i];
+
+                // if(isacc((float*)&_tspeed_mps[i],(float*)&_cspeed_mps[i])) // acceleration
+                // {
+                //     if(fabs(d) > b)
+                //         tmp_tspeed += sgn(tmp_tspeed)*b;
+                //     else
+                //         tmp_tspeed = _tspeed_mps[i];
+                // }
+                // else // deacceleration
+                // {
+                //     if(fabs(d) > c)
+                //         tmp_tspeed -= sgn(tmp_tspeed)*c;
+                //     else
+                //         tmp_tspeed = _tspeed_mps[i];
+                // }
+
+                if (tmp_tspeed > _pid_params.speed_max)
+                    tmp_tspeed = _pid_params.speed_max;
+                else if (tmp_tspeed < -_pid_params.speed_max)
+                    tmp_tspeed = -_pid_params.speed_max;
+
+                _error[i] = tmp_tspeed - _cspeed_mps[i];
+            }
+            if ((_state == OPERATIONAL) && _pid_state)
+            {
+                FOR(ROSBOT_DRIVE_TYPE)
+                {
+                    pidout = arm_pid_f32(_pid_instance[i], _error[i]);
+                    _pidout[i] = (pidout > _pid_params.out_max ? _pid_params.out_max : (pidout < _pid_params.out_min ? _pid_params.out_min : pidout));
+                    _mot[i]->setPower(_pidout[i]);
+                }
             }
         }
         ThisThread::sleep_until(sleepTime);
     }
 }
-
 
 void RosbotDrive::updateTargetSpeed(const NewTargetSpeed_t * new_speed)
 {
@@ -465,14 +491,15 @@ float RosbotDrive::getSpeed(RosbotMotNum mot_num, SpeedMode mode)
 
 void RosbotDrive::resetDistance()
 {
-    if(_pid_state)
-        return;
+    _regulator_state = false;
     FOR(ROSBOT_DRIVE_TYPE)
     {
         _mot[i]->setPower(0);
         _encoder[i]->resetCount();
         arm_pid_reset_f32(_pid_instance[i]);
         _tspeed_mps[i]=0;
+        _cspeed_mps[i]=0;
         _cdistance[i]=0;
     }
+    _regulator_state = true;
 }

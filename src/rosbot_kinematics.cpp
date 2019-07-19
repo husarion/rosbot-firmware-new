@@ -65,8 +65,8 @@ void updateRosbotOdometry(RosbotDrive * drive, RosbotOdometry_t * odom, float dt
 void resetRosbotOdometry(RosbotDrive * drive, RosbotOdometry_t * odom)
 {
     drive->enablePidReg(0);
-    drive->resetDistance();
     odom->reset();
+    drive->resetDistance();
     drive->enablePidReg(1);
 }
 
