@@ -10,7 +10,7 @@
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/BatteryState.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/QuaternionStamped.h>
+#include <rosbot/Imu.h>
 #include <sensor_msgs/BatteryState.h>
 #include <sensor_msgs/Range.h>
 #include <tf/tf.h>
@@ -19,7 +19,7 @@
 #include <map>
 #include <string>
 
-#define BATTERY_VOLTAGE_LOW 10.8
+#define MAIN_LOOP_INTERVAL_MS 10
 
 geometry_msgs::Twist current_vel;
 sensor_msgs::JointState joint_states;
@@ -27,8 +27,7 @@ sensor_msgs::BatteryState battery_state;
 sensor_msgs::Range range_msg[4];
 geometry_msgs::PoseStamped pose;
 std_msgs::UInt8 button_msg;
-geometry_msgs::QuaternionStamped quaternion_msg;
-
+rosbot::Imu imu_msg;
 ros::NodeHandle nh;
 ros::Publisher *vel_pub;
 ros::Publisher *joint_state_pub;
@@ -50,6 +49,11 @@ InterruptIn button1(BUTTON1);
 InterruptIn button2(BUTTON2);
 volatile bool button1_publish_flag = false;
 volatile bool button2_publish_flag = false;
+
+volatile bool is_speed_watchdog_enabled = true;
+volatile bool is_speed_watchdog_active = false;
+int speed_watchdog_interval = 1000; //ms
+volatile uint64_t last_speed_command_time=0;
 
 static void button1Callback()
 {
@@ -73,7 +77,7 @@ const char * range_pub_names[] = {"/range/fr","/range/fl","/range/rr","/range/rl
 
 static void initImuPublisher()
 {
-    imu_pub = new ros::Publisher("/imu", &quaternion_msg);
+    imu_pub = new ros::Publisher("/mpu9250", &imu_msg);
     nh.advertise(*imu_pub);
 }
 
@@ -154,6 +158,8 @@ static void initJointStatePublisher()
 static void velocityCallback(const geometry_msgs::Twist &twist_msg)
 {
     rosbot_kinematics::setRosbotSpeed(driver,twist_msg.linear.x, twist_msg.angular.z);
+    last_speed_command_time = rtos::Kernel::get_ms_count();
+    is_speed_watchdog_active = false;
 }
 
 static void updateOdometryAndSpeed(float dtime)
@@ -178,16 +184,23 @@ public:
     uint8_t enableDistanceSensors(const char *datain, const char **dataout);
     uint8_t enableJointStates(const char *datain, const char **dataout);
     uint8_t resetOdom(const char *datain, const char **dataout);
+    uint8_t enableSpeedWatchdog(const char *datain, const char **dataout);
+    uint8_t getAngle(const char *datain, const char **dataout);
+    uint8_t resetImu(const char *datain, const char **dataout);
+    uint8_t setMotorsAccelDeaccel(const char *datain, const char **dataout);
 
 private:
     ConfigFunctionality();
-    char _buffer[30];
+    char _buffer[50];
     static ConfigFunctionality *_instance;
     static const char SLED_COMMAND[];
     static const char EIMU_COMMAND[];
     static const char EDSE_COMMAND[];
     static const char EJSM_COMMAND[];
     static const char RODOM_COMMAND[];
+    static const char EWCH_COMMAND[];
+    static const char RIMU_COMMAND[];
+    static const char SMAD_COMMAND[];
     map<std::string, configuration_srv_fun_t> _commands;
 };
 
@@ -198,6 +211,9 @@ const char ConfigFunctionality::EIMU_COMMAND[]="EIMU";
 const char ConfigFunctionality::EDSE_COMMAND[]="EDSE";
 const char ConfigFunctionality::EJSM_COMMAND[]="EJSM";
 const char ConfigFunctionality::RODOM_COMMAND[]="RODOM";
+const char ConfigFunctionality::EWCH_COMMAND[]="EWCH";
+const char ConfigFunctionality::RIMU_COMMAND[]="RIMU";
+const char ConfigFunctionality::SMAD_COMMAND[]="SMAD";
 
 ConfigFunctionality::ConfigFunctionality()
 {
@@ -206,6 +222,8 @@ ConfigFunctionality::ConfigFunctionality()
     _commands[EDSE_COMMAND] = &ConfigFunctionality::enableDistanceSensors;
     _commands[EJSM_COMMAND] = &ConfigFunctionality::enableJointStates;
     _commands[RODOM_COMMAND] = &ConfigFunctionality::resetOdom;
+    _commands[EWCH_COMMAND] = &ConfigFunctionality::enableSpeedWatchdog;
+    _commands[RIMU_COMMAND] = &ConfigFunctionality::resetImu;
 }
 
 ConfigFunctionality::configuration_srv_fun_t ConfigFunctionality::findFunctionality(const char *command)
@@ -215,6 +233,29 @@ ConfigFunctionality::configuration_srv_fun_t ConfigFunctionality::findFunctional
         return it->second;
     else
         return NULL;
+}
+
+uint8_t ConfigFunctionality::resetImu(const char *datain, const char **dataout)
+{
+    *dataout = NULL;
+    rosbot_sensors::resetImu();
+    return rosbot::Configuration::Response::SUCCESS;
+}
+
+uint8_t ConfigFunctionality::setMotorsAccelDeaccel(const char *datain, const char **dataout)
+{
+    float accel, deaccel;
+    *dataout = NULL;
+    //TODO: range
+    if(sscanf(datain,"%f %f",&accel, deaccel) == 2)
+    {
+        RosobtDrivePid new_pid_params = RosbotDrive::DEFAULT_PID_PARAMS;
+        new_pid_params.a_max = accel;
+        new_pid_params.da_max = deaccel;
+        driver->updatePidParams(&new_pid_params,true);
+        return rosbot::Configuration::Response::SUCCESS; 
+    }
+    return rosbot::Configuration::Response::FAILURE;
 }
 
 uint8_t ConfigFunctionality::resetOdom(const char *datain, const char **dataout)
@@ -300,6 +341,18 @@ uint8_t ConfigFunctionality::setLed(const char *datain, const char **dataout)
     return rosbot::Configuration::Response::FAILURE;
 }
 
+uint8_t ConfigFunctionality::enableSpeedWatchdog(const char *datain, const char **dataout)
+{
+    int en;
+    *dataout = NULL;
+    if(sscanf(datain,"%d",&en) == 1)
+    {
+        is_speed_watchdog_enabled = (en == 0 ? false : true);
+        return rosbot::Configuration::Response::SUCCESS; 
+    }
+    return rosbot::Configuration::Response::FAILURE;
+}
+
 ConfigFunctionality * ConfigFunctionality::getInstance()
 {
     if(_instance == NULL)
@@ -378,9 +431,6 @@ int main()
     driver->enable(true);
     driver->enablePidReg(true);
 
-    events::EventQueue * q = mbed_event_queue();
-    rosbot_sensors::initBatteryWatchdog(q,5,BATTERY_VOLTAGE_LOW);
-
     button1.mode(PullUp);
     button2.mode(PullUp);
     button1.fall(button1Callback);
@@ -415,10 +465,23 @@ int main()
 
     int spin_result;
     uint32_t spin_count=1;
-    uint64_t time_old = Kernel::get_ms_count();
+    uint64_t last_spin_time=0 ,curr_time = 0;
 
     while (1)
     {
+        curr_time = Kernel::get_ms_count(); 
+        rosbot_kinematics::updateRosbotOdometry(driver,&odometry,(curr_time-last_spin_time)/1000.0f);
+        last_spin_time = curr_time;
+        
+        if(is_speed_watchdog_enabled)
+        {
+            if(!is_speed_watchdog_active && (curr_time - last_speed_command_time) > speed_watchdog_interval)
+            {
+                rosbot_kinematics::setRosbotSpeed(driver, 0.0f, 0.0f);
+                is_speed_watchdog_active = true;
+            }
+        }
+
         if(button1_publish_flag)
         {
             button1_publish_flag = false;
@@ -441,9 +504,11 @@ int main()
 
         if (spin_count % 5 == 0) /// cmd_vel, odometry, joint_states
         {
-            uint64_t time_new = Kernel::get_ms_count();
-            updateOdometryAndSpeed((time_new-time_old)/1000.0f);
-            time_old = time_new;
+            current_vel.linear.x = sqrt(odometry.robot_x_vel * odometry.robot_x_vel + odometry.robot_y_vel * odometry.robot_y_vel);
+            current_vel.angular.z = odometry.robot_angular_vel;
+            pose.pose.position.x = odometry.robot_x_pos;
+            pose.pose.position.y = odometry.robot_y_pos;
+            pose.pose.orientation = tf::createQuaternionFromYaw(odometry.robot_angular_pos);
             
             pose.header.stamp = nh.now();
             pose_pub->publish(&pose);
@@ -461,9 +526,9 @@ int main()
             }
         }
 
-        if(spin_count % 50 == 0)
+        if(spin_count % 40 == 0)
         {
-            battery_state.voltage = rosbot_sensors::readVoltage();
+            battery_state.voltage = rosbot_sensors::updateBatteryWatchdog();
             battery_pub->publish(&battery_state);
         }
 
@@ -486,21 +551,26 @@ int main()
         {
             rosbot_sensors::imu_meas_t * message = (rosbot_sensors::imu_meas_t*)evt.value.p;
 
-            quaternion_msg.header.stamp = nh.now();
-            quaternion_msg.quaternion.x = message->qx;
-            quaternion_msg.quaternion.y = message->qy;
-            quaternion_msg.quaternion.z = message->qz;
-            quaternion_msg.quaternion.w = message->qw;
+            imu_msg.header.stamp = nh.now();
+            imu_msg.orientation.x = message->orientation[0];
+            imu_msg.orientation.y = message->orientation[1];
+            imu_msg.orientation.z = message->orientation[2];
+            imu_msg.orientation.w = message->orientation[3];
+            for(int i=0;i<3;i++)
+            {
+                imu_msg.angular_velocity[i] = message->angular_velocity[i];
+                imu_msg.linear_acceleration[i] = message->linear_velocity[i];
+            }
             rosbot_sensors::imu_sensor_mail_box.free(message);
-            imu_pub->publish(&quaternion_msg);
+            imu_pub->publish(&imu_msg);
         }
 
-        spin_result = nh.spinOnce();
+        int spin_result = nh.spinOnce();
         if(spin_result != ros::SPIN_OK)
         {
             nh.logwarn(spin_result == -1 ? "SPIN_ERR" : "SPIN_TIMEOUT");
         }
         spin_count++;
-        ThisThread::sleep_for(10);
+        ThisThread::sleep_for(MAIN_LOOP_INTERVAL_MS);
     }
 }

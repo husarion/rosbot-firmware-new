@@ -132,6 +132,10 @@ int initImu()
 
     err = imu.dmpSetOrientation(DEFAULT_IMU_ORIENTATION);
     
+    err = imu.setGyroFSR(500); // 500dps for gyro
+
+    err = imu.setLPF(42); // 42Hz low pass filter
+    
     // err = imu.dmpSetOrientation(MPU_ORIENTATION);
     // The interrupt level can either be active-high or low.
     // Configure as active-low, since we'll be using the pin's
@@ -187,6 +191,10 @@ int resetImu()
 
     err = imu.dmpSetOrientation(DEFAULT_IMU_ORIENTATION);
     
+    err = imu.setGyroFSR(500); // 500dps for gyro
+
+    err = imu.setLPF(42); // 42Hz low pass filter
+
     // err = imu.dmpSetOrientation(MPU_ORIENTATION);
     // The interrupt level can either be active-high or low.
     // Configure as active-low, since we'll be using the pin's

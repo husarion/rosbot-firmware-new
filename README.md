@@ -37,13 +37,13 @@ The ROSbot mobile platform's microcontroller firmware. Written in C++ using [arm
                           ``.--:/+osyyhhmmmNmmmmo/+/.-+ds..----:::::--.`        
                                    ``.-:+ydNNNNNmmddddh/.`                      
                                         `.-/osyhyss+/.`                         
-                                                                              
-                                     _                  ___   _  _   
-                                    (_)                / _ \ | || |  
-             __   __ ___  _ __  ___  _   ___   _ __   | | | || || |_ 
-             \ \ / // _ \| '__|/ __|| | / _ \ | '_ \  | | | ||__   _|
-              \ V /|  __/| |   \__ \| || (_) || | | | | |_| |_  | |  
-               \_/  \___||_|   |___/|_| \___/ |_| |_|  \___/(_) |_|  
+                                                                                         
+                               _               _____    ___   __  
+                              (_)             |  _  |  /   | /  | 
+            _   _____ _ __ ___ _  ___  _ __   | |/' | / /| | `| | 
+             \ / / _ \ '__/ __| |/ _ \| '_ \  |  /| |/ /_| |  | | 
+            \ V /  __/ |  \__ \ | (_) | | | | \ |_/ /\___  |__| |_
+             \_/ \___|_|  |___/_|\___/|_| |_|  \___(_)   |_(_)___/
 ```
 
 
@@ -94,7 +94,7 @@ Set Mbed OS version to supported by this template:
 
 ```bash
 $ cd mbed-os
-$ mbed update mbed-os-5.12.4
+$ mbed update mbed-os-5.13.1
 ```
 
 During Mbed OS installation you can be asked to install additional python libraries. Switch to `mbed-os` dir and run:

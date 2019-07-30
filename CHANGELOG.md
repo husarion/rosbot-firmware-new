@@ -61,6 +61,12 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
   - overall firmware's stability is improved
   - max target speed limited to 1.5m/s
 
+## [0.4.1] - 2019-07-30
+
+### Changed
+* LPF set to 42 Hz and Gyro FSR set to 500dps for IMU.
+* Mbed version changed from `5.12.4` to `5.13.1`
+
 ### TODO
   - forward regulator controlling acceleration and deacceleration
   - virtual bumper using VL53L0X proximity sensors
