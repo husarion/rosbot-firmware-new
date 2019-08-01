@@ -1,4 +1,4 @@
-#include <test/main-dev.h>
+#include <test/pwm_test2.h>
 
 int main()
 {

@@ -37,13 +37,13 @@ The ROSbot mobile platform's microcontroller firmware. Written in C++ using [arm
                           ``.--:/+osyyhhmmmNmmmmo/+/.-+ds..----:::::--.`        
                                    ``.-:+ydNNNNNmmddddh/.`                      
                                         `.-/osyhyss+/.`                         
-                                                                                         
-                               _               _____    ___   __  
-                              (_)             |  _  |  /   | /  | 
-            _   _____ _ __ ___ _  ___  _ __   | |/' | / /| | `| | 
-             \ / / _ \ '__/ __| |/ _ \| '_ \  |  /| |/ /_| |  | | 
-            \ V /  __/ |  \__ \ | (_) | | | | \ |_/ /\___  |__| |_
-             \_/ \___|_|  |___/_|\___/|_| |_|  \___(_)   |_(_)___/
+                                                                                                     
+                                _               _____  _____  _____ 
+                               (_)             |  _  ||  ___||  _  |
+            __   _____ _ __ ___ _  ___  _ __   | |/' ||___ \ | |/' |
+            \ \ / / _ \ '__/ __| |/ _ \| '_ \  |  /| |    \ \|  /| |
+             \ V /  __/ |  \__ \ | (_) | | | | \ |_/ //\__/ /\ |_/ /
+              \_/ \___|_|  |___/_|\___/|_| |_|  \___(_)____(_)\___/ 
 ```
 
 
@@ -133,6 +133,7 @@ components/wifi/*
 components/802.15.4_RF/*
 targets/TARGET_STM/TARGET_STM32F4/TARGET_STM32F407xG/device/TOOLCHAIN_GCC_ARM/STM32F407XG.ld
 targets/TARGET_STM/TARGET_STM32F4/TARGET_STM32F407xG/device/TOOLCHAIN_GCC_ARM/startup_stm32f407xx.S
+usb/*
 ```
 
 ## Using firmware
@@ -179,21 +180,23 @@ You can add new tasks and customize existing ones by editing `task.json` file.
 
 #### Building and uploading firmware (BOOTLOADER)
 
-The software bootloader allows the use of Husarion Cloud. You can find it in `TARGET_CORE2/bootloader_1_0_0_cortex.hex`. The instruction how to flash it can be found [here](https://husarion.com/manuals/core2/#updating-core2-bootloader).
+> This method allows you to easily switch between both Mbed-os and hFramework.
+
+The software bootloader allows the use of Husarion Cloud and hFramework. You can find it in `TARGET_CORE2/bootloader_1_0_0_cortex.hex`. The instruction how to flash it can be found [here](https://husarion.com/manuals/core2/#updating-core2-bootloader).
+
+If you want to use the bootloader just add this lines to `mbed_app.json`:
+```json
+    "target.mbed_app_start":"0x08010000",
+    "target.mbed_rom_start":"0x08000000",
+    "target.mbed_rom_size":"0x100000"
+```
 
 To build firmware use `BUILD (RELEASE)` or `BUILD (DEBUG)` tasks.
 
 To flash firmware connect ST-LINK to debug connector of CORE2 and use `FLASH FIRMWARE WHEN BOOTLOADER (RELEASE)` or `FLASH FIRMWARE WHEN BOOTLOADER (DEBUG)` task.
 
 #### Building and uploading firmware (NO BOOTLOADER)
-> Before proceeding with the following steps make sure you conducted mass erase of the memory and made all flash memory sectors are write unprotected.
-
-If you do not want use the bootloader just remove this lines from mbed_app.json:
-```json
-    "target.mbed_app_start":"0x08010000",
-    "target.mbed_rom_start":"0x08000000",
-    "target.mbed_rom_size":"0x100000"
-```
+> Before proceeding with the following steps make sure you conducted mass erase of the memory and made all flash memory sectors write unprotected.
 
 To build firmware use `BUILD (RELEASE)` or `BUILD (DEBUG)` tasks.
 

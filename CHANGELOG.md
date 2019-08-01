@@ -67,6 +67,13 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
 * LPF set to 42 Hz and Gyro FSR set to 500dps for IMU.
 * Mbed version changed from `5.12.4` to `5.13.1`
 
+## [0.5.0] - 2019-08-01
+
+### Changed
+* Improved DDR8848 driver implementation for CORE2. Motors' pwm frequency is now set to 21kHz with 1000 steps resolution. 
+* changed symbols C and C++ versions (following C11 and C++14 support in Mbed 5.13.x)
+
 ### TODO
   - forward regulator controlling acceleration and deacceleration
   - virtual bumper using VL53L0X proximity sensors
+

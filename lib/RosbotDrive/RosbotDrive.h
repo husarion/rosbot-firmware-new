@@ -3,7 +3,7 @@
 
 #include <mbed.h>
 #include <arm_math.h>
-#include "drv88xx-driver-mbed/DRV8848.h"
+#include "drv88xx-driver-mbed/DRV8848_STM.h"
 #include "encoder-mbed/Encoder.h"
 #define PWM_DEFAULT_FREQ_HZ 18000UL
 
@@ -84,7 +84,7 @@ public:
     static const RosbotDrivePid_t DEFAULT_PID_PARAMS;
     static RosbotDrive * getInstance(const RosbotDrive_params_t * params=NULL);
     static int getRosbotDriveType();
-    void init(int freq=PWM_DEFAULT_FREQ_HZ);
+    void init(void);
     void enable(bool en=true);
     void stop();
     void enablePidReg(bool en);
@@ -118,7 +118,7 @@ private:
     double _wheel_coefficient2;
     float _pid_interval_s;
     DRV8848 * _mot_driver[2];
-    DCMotor * _mot[4]; 
+    DRV8848::DRVMotor * _mot[4]; 
     Encoder * _encoder[4];
     arm_pid_instance_f32 * _pid_instance[4];
     Mutex rosbot_drive_mutex;

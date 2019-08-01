@@ -187,7 +187,7 @@ RosbotDrive * RosbotDrive::getInstance(const RosbotDrive_params_t * params)
     return _instance;
 }
 
-void RosbotDrive::init(int freq)
+void RosbotDrive::init(void)
 {
     static bool initialized = false;
     if(initialized)
@@ -209,7 +209,7 @@ void RosbotDrive::init(int freq)
     FOR(ROSBOT_DRIVE_TYPE)
     {
         _mot[i]->setPolarity(_polarity>>i & 1);
-        _mot[i]->init(freq);
+        _mot[i]->init(PWM_DEFAULT_FREQ_HZ);
         _mot[i]->setDriveMode(true);
         _encoder[i]->setPolarity(_polarity>>(i+4) & 1);
         _encoder[i]->init();
