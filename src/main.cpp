@@ -67,6 +67,9 @@ Timer odom_watchdog_timer;
 volatile uint32_t last_speed_command_time=0;
 
 /* WS2812B BEGIN */
+
+volatile bool is_rosserial_on = false;
+
 #if WS2812B_LEDS_SIGNALIZATION
 Mail<int, 5> ws2812b_mail_box;
 
@@ -92,7 +95,6 @@ DigitalOut servo_sel1(SERVO_SEL1,0);
 DigitalOut servo_sel2(SERVO_SEL2,0);
 DigitalOut servo_power(SERVO_POWER_ON,0);
 
-volatile bool is_rosserial_on = false;
 
 static void ledsCallback(){
 
