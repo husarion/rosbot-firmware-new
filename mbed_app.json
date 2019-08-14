@@ -1,5 +1,13 @@
 {
-    "config": {},
+    "config": {
+        "enable-ws2812b-signalization":
+        {
+            "help": "Enable ws2812b signalization",
+            "macro_name": "WS2812B_LEDS_SIGNALIZATION",
+            "value": 0,
+            "required": false
+        }
+    },
     "macros": [
         "ENCODER_1=TIM2",
         "ENCODER_2=TIM8",
@@ -26,7 +34,8 @@
             "drv88xx-driver-mbed.use-stm-drv8848-driver":1,
             "mpu9250-lib.i2c-sda": "SENS2_PIN4",
             "mpu9250-lib.i2c-scl": "SENS2_PIN3",
-            "mpu9250-lib.i2c-frequency": 100000
+            "mpu9250-lib.i2c-frequency": 100000,
+            "enable-ws2812b-signalization": 0
         }
     }
 }

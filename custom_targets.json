@@ -13,7 +13,7 @@
         },
         "macros_add": ["USB_STM_HAL","INITIAL_SP=(0x20020000UL)"],
         "overrides": {"lse_available": 0},
-        "device_has_add": ["ANALOGOUT", "TRNG", "CAN", "FLASH", "MPU"],
+        "device_has_add": ["ANALOGOUT", "TRNG", "CAN", "FLASH", "MPU", "SERIAL_ASYNCH"],
         "release_versions": ["5"],
         "device_name": "STM32F407ZG",
         "bootloader_supported": true

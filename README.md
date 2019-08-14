@@ -1,51 +1,19 @@
 # ROSbot firmware
 The ROSbot mobile platform's microcontroller firmware. Written in C++ using [arm's Mbed OS framework](https://os.mbed.com/). 
 
+<!-- <p align="center">
+<img width="800px" src=".img/pro.jpg"/>
+</p> -->
 
 ```
-
-                                                                                 
-                          +hdhhyyssoo+//::-..````````                           
-                         -NNNNNNNmmNmNNNNNNmmmmddhhyyso+ooosso-                 
-                         -dNNNNNmddmNNNNNNmdmNNmdmmmmmmmyssssss.      .`        
-                          :ydmmNmmmmmNNNNNmmmNmddmmmmmmms++oooo.     -mo        
-                               `.--:+omNNNNNNNmmmmmmmmmmddddhh+      /m+        
-                                   dNNNNNNNNNNNNNNNmmmmh:h:          sm-        
-                                   /yhdmmmNNNNNmmmddhso- /+          dd`        
-                                       -.`.:o/```.``````  -         `mh         
-                                       `.             ``` `         :mo         
-                                        .          `                sm/         
-                           `:/+osyyyyyyhhys+.      `                dm:         
-                           ymmmmddhhddddddhhy.    `/               .Nm.         
-                          .dmNNmmNNNNNNNmyhhh/  .+s:`              /Nh          
-                          /mmmmmmmmdmmmddddddy/ys-```             /hh/          
-            ```````````...omNNmmmNNNNmmmdddddhy-...--``......````ohy`           
-       ://////s/----------smNNNNNNNNNNmmmddddh+:....:::::::-....:/-//:::-       
-     `+ooo++++++++++///:::/osyyyyyyyyyyyssooo+-:/:::o/-----:/:::::--:+hhy+`     
-    .ooooo+++++++++++++++++++++++++++++so+++++----. `` -`.``.----......``..     
-    .sooooooooooo+++++oooo++++++++++++++++/:::-`` . `` ````..-/ssddhdys+:.      
-    ymhoooooooooooooooooooo++++++++++++++/-..`````````````.-+hmmmmmddhhhdhs.    
-   smNNm+:/+oooooooooooooooooooooo++++++/--/syddddhyo/:.`./hmmmmdddhhoso-:sd:   
-  .mNNNN+oyysoo/-:/+ooooooooooooooooo++:/smmmmmmddhdhddyo/hmmmmdhhhy.:::.y:+d.  
-  -mmNNN: -:/osy:   `....---://++++++/:smNNmmmddhho:+/:oddmmNmmmddh` ``.:dh`h+  
-  .dmmNmy-`````     ```````ysmdhso-``:ymNNmmmhydy/ `+hd:-dmNNNNNmm: -...-dh.ho  
-   ommmNNms-......```````````-:/oss-.+dNmmmmmdmy. ```.:``+mmNNNNNm. .-``hdo/m:  
-    +dNNNNNNhyo+++/-...```````````` -odmmNNmNNm.`...`.oy//mmNNNNNm+.`.`+do`oy   
-     .ymNNNNNNNNNNmhhyyso+/:-.....``.+dmmmmmNNh. ..`.+mm/ymmNNNNmmho..hdo.oy`   
-      `-/osyhhdddhhhhhhhddddddhyyso+/:ommmmmmmd-  ``.sds:mhydNNNNNmd+///ohs.    
-                ``..-:/+ossyyhhhhhhhhhhmmmmmmmm/.+oo.`:-hhooyhmNNNNNNmmdy/`     
-                          ``.--:/+osyyhhmmmNmmmmo/+/.-+ds..----:::::--.`        
-                                   ``.-:+ydNNNNNmmddddh/.`                      
-                                        `.-/osyhyss+/.`                         
-                                                                                                     
-                                _               _____  _____  _____ 
-                               (_)             |  _  ||  ___||  _  |
-            __   _____ _ __ ___ _  ___  _ __   | |/' ||___ \ | |/' |
-            \ \ / / _ \ '__/ __| |/ _ \| '_ \  |  /| |    \ \|  /| |
-             \ V /  __/ |  \__ \ | (_) | | | | \ |_/ //\__/ /\ |_/ /
-              \_/ \___|_|  |___/_|\___/|_| |_|  \___(_)____(_)\___/ 
-```
-
+         _____     ____    _____                 
+        |  _  |   / ___|  |  _  |                
+ __   __| |/' |  / /___   | |/' |                
+ \ \ / /|  /| |  | ___ \  |  /| |                
+  \ V / \ |_/ /_ | \_/ | _\ |_/ /                
+   \_/   \___/(_)\_____/(_)\___/                 
+                                                      
+```                                                    
 
 
 ## Prerequisites
@@ -94,7 +62,7 @@ Set Mbed OS version to supported by this template:
 
 ```bash
 $ cd mbed-os
-$ mbed update mbed-os-5.13.1
+$ mbed update master
 ```
 
 During Mbed OS installation you can be asked to install additional python libraries. Switch to `mbed-os` dir and run:
@@ -115,7 +83,7 @@ Example:
 $ mbed config -G MBED_OS_DIR "E:\mbed_projects\core2-mbed-workspace\mbed-os"
 ```
 
-### Adding .mbedignore
+### Adding `.mbedignore` file
 
 In `mbed-os` directory create `.mbedignore` (filename starts with dot) file with following content:
 
@@ -229,6 +197,12 @@ To upload new firmware run:
 ```bash
 $ sudo stm32loader -c <your_sbc> -e -v -w firmware.bin
 ```
+
+where `<your_sbc>` :
+* `tinker` for Asus Tinker Board
+* `upboard` for Upboard
+* `rpi` for Raspberry Pi
+
 ### Debug
 
 To debug:
@@ -322,7 +296,6 @@ string data
 uint8 result
 ```
 
-
 At the moment following commands are available:
 * `SLED` - SET LED:
 
@@ -366,8 +339,22 @@ At the moment following commands are available:
     $ rosservice call /config "command: `RODOM`
     >data: ''"
     ```
+* `SANI` - SET WS2812B LEDS ANIMATION
 
-In order to use it you have to download the package `rosbot` that can be found [here](https://github.com/adamkrawczyk/rosbot). Clone it to your `ros_ws/src` folder and run `catkin_make` to build it. Besides custom messages the package contains also a ready to use **Extended Kalman Filter** that combines both the imu and encoders measurements to better approximate the ROSbot position and orientation. The filtered output is published to `odom` topic.
+    To set animation run:
+    ```bash
+    $ rosservice call /config "command: `SANI`
+    >data: ''"
+    ```
+    
+    * `-1` - ws2812b interface off (default)
+    * `0` - PENDING (no animation)
+    * `1` - ACTIVE (fading blue)
+    * `2` - PREEMPTED (fading yellow)
+    * `3` - SUCCEEDED (fading green)
+    * `4` - ABORTED (flashing red front/rear)
+
+In order to use the service you have to download the package `rosbot` that can be found [HERE](https://github.com/adamkrawczyk/rosbot). Clone it to your `ros_ws/src` folder and run `catkin_make` to build it. Besides custom messages the package contains also a ready to use **Extended Kalman Filter** that combines both the imu and encoders measurements to better approximate the ROSbot position and orientation. 
 
 To launch the rosserial communication and Kalman filter run:
 ```bash

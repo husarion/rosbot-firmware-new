@@ -463,6 +463,7 @@ typedef enum {
     SERVO_ADC_ALT1 = PA_3_ALT1,
     SERVO_SEL1 = PE_10,
     SERVO_SEL2 = PE_12,
+    SERVO_POWER_ON = PE_15,
     
 
     /**** BAT AND BOOT PINS****/

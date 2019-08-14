@@ -21,8 +21,6 @@ void setRosbotSpeed(RosbotDrive * drive, float linear, float angular)
     drive->updateTargetSpeed(&new_speed);
 }
 
-//TODO: fix odometry
-
 void updateRosbotOdometry(RosbotDrive * drive, RosbotOdometry_t * odom, float dtime)
 {
     double curr_wheel_R_ang_pos;
@@ -33,15 +31,6 @@ void updateRosbotOdometry(RosbotDrive * drive, RosbotOdometry_t * odom, float dt
     odom->wheel_RL_ang_pos = drive->getAngularPos(MOTOR_RL);
     if(drive->getRosbotDriveType()==4)
     {
-#if 0
-        // Error is too large in this method
-        double curr_wheel_L_lin_vel = (drive->getSpeed(MOTOR_FL)+drive->getSpeed(MOTOR_RL))/2;
-        double curr_wheel_R_lin_vel = (drive->getSpeed(MOTOR_FR)+drive->getSpeed(MOTOR_RR))/2;
-        odom->robot_angular_vel = (curr_wheel_R_lin_vel - curr_wheel_L_lin_vel)/ (ROBOT_WIDTH * DIAMETER_MODIFICATOR);
-        odom->robot_angular_pos = odom->robot_angular_pos + odom->robot_angular_vel * (dtime);
-        odom->robot_x_vel = (curr_wheel_L_lin_vel + odom->robot_angular_vel * ROBOT_WIDTH_HALF) * cos(odom->robot_angular_pos); 
-        odom->robot_y_vel = (curr_wheel_L_lin_vel + odom->robot_angular_vel * ROBOT_WIDTH_HALF) * sin(odom->robot_angular_pos); 
-#endif
         curr_wheel_R_ang_pos = (odom->wheel_FR_ang_pos + odom->wheel_RR_ang_pos)/(2*TYRE_DEFLATION);
         curr_wheel_L_ang_pos = (odom->wheel_FL_ang_pos + odom->wheel_RL_ang_pos)/(2*TYRE_DEFLATION);
     }
