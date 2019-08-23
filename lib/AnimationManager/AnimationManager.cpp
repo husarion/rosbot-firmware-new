@@ -2,7 +2,7 @@
 #include "AnimationManager.h"
 
 static Mail<uint32_t, 5> ws2812b_mail_box;
-static Thread ws2812b_thread(osPriorityAboveNormal);
+static Thread ws2812b_thread(osPriorityHigh);
 
 // setup servo power DC/DC converter to 5V
 static DigitalOut servo_sel1(SERVO_SEL1,0);
