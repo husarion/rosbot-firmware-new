@@ -365,7 +365,9 @@ At the moment following commands are available:
 
 ### ROS requirements - `rosbot` package
 
-In order to use the service you have to download the package `rosbot` that can be found [HERE](https://github.com/adamkrawczyk/rosbot). Clone it to your `ros_ws/src` folder and run `catkin_make` to build it. Besides custom messages the package contains also a ready to use **Extended Kalman Filter** that combines both the imu and encoders measurements to better approximate the ROSbot position and orientation. 
+In order to use the service you have to download the package `rosbot` that can be found [HERE](https://github.com/byq77/rosbot). For installation details check the [README](https://github.com/byq77/rosbot/blob/master/README.md). 
+
+The package contains the ready to use **Extended Kalman Filter** that combines both the imu and encoders measurements to better approximate the ROSbot position and orientation. The package also has the custom messages required by the new firmware.
 
 To launch the rosserial communication and Kalman filter run:
 ```bash
