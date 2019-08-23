@@ -20,8 +20,19 @@
 #include <map>
 #include <string>
 
-#if WS2812B_LEDS_SIGNALIZATION
-    #include <ws2812b-effects.h>
+#if USE_WS2812B_ANIMATION_MANAGER
+    #include <AnimationManager.h>
+    AnimationManager * anim_manager;
+    static int parseColorStr(const char *color_str, Color_t *color_ptr)
+    {
+        uint32_t num;
+        if (sscanf(color_str, "%*c%X", &num) != 1)
+            return 0;
+        color_ptr->b = 0xff & num;
+        color_ptr->g = 0xff & (num >> 8);
+        color_ptr->r = 0xff & (num >> 16);
+        return 1;
+    }
 #endif
 
 #define MAIN_LOOP_INTERVAL_MS 10
@@ -65,101 +76,6 @@ int speed_watchdog_interval = 1000; //ms
 
 Timer odom_watchdog_timer;
 volatile uint32_t last_speed_command_time=0;
-
-/* WS2812B BEGIN */
-
-volatile bool is_rosserial_on = false;
-
-#if WS2812B_LEDS_SIGNALIZATION
-Mail<int, 5> ws2812b_mail_box;
-
-enum WS2812B_Animation : int
-{
-    WS2812B_OFF             = -1,
-    WS2812B_PENDING         = 0,
-    WS2812B_ACTIVE          = 1,
-    WS2812B_PREEMPTED       = 2,
-    WS2812B_SUCCEEDED       = 3,
-    WS2812B_ABORTED         = 4
-};
-
-const Color_t BLUE = {0x00,0x38,0xff};  
-const Color_t YELLOW = {0xfd,0xa6,0x00};  
-const Color_t GREEN = {0x32,0xae,0x00};  
-const Color_t RED = {0xc9,0x00,0x00};  
-
-Thread ws2812b_thread(osPriorityAboveNormal);
-
-// setup servo power DC/DC converter to 5V
-DigitalOut servo_sel1(SERVO_SEL1,0);
-DigitalOut servo_sel2(SERVO_SEL2,0);
-DigitalOut servo_power(SERVO_POWER_ON,0);
-
-
-static void ledsCallback(){
-
-    int curr_animation = -1;
-    
-    ws2812b_init();
-
-    while(1)
-    {
-        if(!is_rosserial_on)
-        {
-            if(servo_power)
-                servo_power = 0;
-            ThisThread::sleep_for(100);
-        }
-        
-        osEvent evt = ws2812b_mail_box.get(0);
-        if(evt.status == osEventMail)
-        {
-            int * message = (int*)evt.value.p;
-            curr_animation = *message;
-            ws2812b_mail_box.free(message);
-        }
-
-        // energy saving mode
-        if(curr_animation == WS2812B_OFF)
-        {
-            if(servo_power){
-                clearAll();
-                servo_power = 0;
-            }
-            ThisThread::sleep_for(100);
-        }
-        else
-        {
-            if(!servo_power)
-                servo_power = 1;
-        }
-        
-        switch (curr_animation)
-        {
-            case WS2812B_PENDING:
-                clearAll();
-                drawFrame();
-                ThisThread::sleep_for(100);
-                break;
-            case WS2812B_ACTIVE:
-                FadeInOut(&BLUE,50,1.0);
-                break;
-            case WS2812B_PREEMPTED:
-                FadeInOut(&YELLOW,50,1.0);
-                break;
-            case WS2812B_SUCCEEDED:
-                FadeInOut(&GREEN,50,1.0);
-                break;
-            case WS2812B_ABORTED:
-                HalfBlink(&RED,750);
-                break;
-            default:
-                break;
-        }
-    }
-}
-#endif
-/* WS2812B END */
 
 static void button1Callback()
 {
@@ -359,24 +275,39 @@ uint8_t ConfigFunctionality::enableTfMessages(const char *datain, const char **d
     return rosbot::Configuration::Response::FAILURE;
 }
 
+//TODO change the implementation
 uint8_t ConfigFunctionality::setAnimation(const char *datain, const char **dataout)
 {
-    int animation_index;
     *dataout = NULL;
-    if (sscanf(datain, "%d", &animation_index) == 1)
+#if USE_WS2812B_ANIMATION_MANAGER
+    Color_t color;
+    switch(datain[0])
     {
-
-#if WS2812B_LEDS_SIGNALIZATION
-        if(!ws2812b_mail_box.full())
-        {
-            int * msg = ws2812b_mail_box.alloc();
-            *msg = animation_index;
-            ws2812b_mail_box.put(msg); 
-        }
-#endif
-        return rosbot::Configuration::Response::SUCCESS;
+        case 'O':
+        case 'o':
+            anim_manager->enableInterface(false);
+            break;
+        case 'F':
+        case 'f':
+            if(parseColorStr(&datain[2], &color)) anim_manager->setFadingAnimation(&color);
+            break;
+        case 'B':
+        case 'b':
+            if(parseColorStr(&datain[2], &color)) anim_manager->setBlinkingAnimation(&color);
+            break;
+        case 'R':
+        case 'r':
+            anim_manager->setRainbowAnimation();
+            break;
+        case 'S':
+        case 's':
+            if(parseColorStr(&datain[2], &color)) anim_manager->setSolidColor(&color);
+            break;
+        default:
+            return rosbot::Configuration::Response::FAILURE;
     }
-    return rosbot::Configuration::Response::FAILURE;
+#endif
+    return rosbot::Configuration::Response::SUCCESS;
 }
 
 ConfigFunctionality::configuration_srv_fun_t ConfigFunctionality::findFunctionality(const char *command)
@@ -521,7 +452,7 @@ void responseCallback(const rosbot::Configuration::Request & req, rosbot::Config
     ConfigFunctionality::configuration_srv_fun_t fun = config_functionality->findFunctionality(req.command); 
     if(fun != NULL)
     {
-        nh.loginfo("Command found!");
+        // nh.loginfo("Command found!");
         res.result = (config_functionality->*fun)(req.data, &res.data);
     }
     else
@@ -612,8 +543,9 @@ int main()
     initImuPublisher();
     initButtonPublisher();
 
-#if WS2812B_LEDS_SIGNALIZATION
-    ws2812b_thread.start(callback(ledsCallback));
+#if USE_WS2812B_ANIMATION_MANAGER
+    anim_manager = AnimationManager::getInstance();
+    anim_manager->init();
 #endif
 
 #if defined(MEMORY_DEBUG_INFO)
@@ -626,7 +558,6 @@ int main()
 
     while (1)
     {
-        is_rosserial_on = nh.connected();
 
         if(is_speed_watchdog_enabled)
         {
@@ -636,6 +567,10 @@ int main()
                 is_speed_watchdog_active = true;
             }
         }
+
+#if USE_WS2812B_ANIMATION_MANAGER
+        if(!nh.connected()) anim_manager->enableInterface(false);
+#endif
 
         curr_odom_calc_time = odom_watchdog_timer.read();
         rosbot_kinematics::updateRosbotOdometry(driver,&odometry,curr_odom_calc_time-last_odom_calc_time);
@@ -647,7 +582,7 @@ int main()
             if(!button1)
             {
                 button_msg.data = 1;
-                if(is_rosserial_on) button_pub->publish(&button_msg);
+                if(nh.connected()) button_pub->publish(&button_msg);
             }
         }
 
@@ -657,7 +592,7 @@ int main()
             if(!button2)
             {
                 button_msg.data = 2;
-                if(is_rosserial_on) button_pub->publish(&button_msg);
+                if(nh.connected()) button_pub->publish(&button_msg);
             }
         }
 
@@ -670,8 +605,8 @@ int main()
             pose.pose.orientation = tf::createQuaternionFromYaw(odometry.robot_angular_pos);
             
             pose.header.stamp = nh.now();
-            if(is_rosserial_on)  pose_pub->publish(&pose);
-            if(is_rosserial_on)  vel_pub->publish(&current_vel);
+            if(nh.connected())  pose_pub->publish(&pose);
+            if(nh.connected())  vel_pub->publish(&current_vel);
 
             if(joint_states_enabled)
             {
@@ -681,7 +616,7 @@ int main()
                 pos[3] = odometry.wheel_RR_ang_pos;
                 joint_states.position = pos;
                 joint_states.header.stamp = pose.header.stamp; 
-                if(is_rosserial_on) joint_state_pub->publish(&joint_states);
+                if(nh.connected()) joint_state_pub->publish(&joint_states);
             }
 
             if(tf_msgs_enabled)
@@ -693,14 +628,14 @@ int main()
                 robot_tf.transform.rotation.y = pose.pose.orientation.y;
                 robot_tf.transform.rotation.z = pose.pose.orientation.z;
                 robot_tf.transform.rotation.w = pose.pose.orientation.w;
-                if(is_rosserial_on) broadcaster.sendTransform(robot_tf);
+                if(nh.connected()) broadcaster.sendTransform(robot_tf);
             }
         }
 
         if(spin_count % 40 == 0)
         {
             battery_state.voltage = rosbot_sensors::updateBatteryWatchdog();
-            if(is_rosserial_on) battery_pub->publish(&battery_state);
+            if(nh.connected()) battery_pub->publish(&battery_state);
         }
 
         if(spin_count % 20 == 0 && distance_sensors_enabled) // ~ 5 HZ
@@ -712,7 +647,7 @@ int main()
                 range = distance_sensors->getSensor(i)->readRangeContinuousMillimeters(false);
                 range_msg[i].header.stamp = t;
                 range_msg[i].range = (range != 65535) ? (float)range/1000.0f : -1.0f;
-                if(is_rosserial_on) range_pub[i]->publish(&range_msg[i]);
+                if(nh.connected()) range_pub[i]->publish(&range_msg[i]);
             }
         }
         
@@ -733,7 +668,7 @@ int main()
                 imu_msg.linear_acceleration[i] = message->linear_velocity[i];
             }
             rosbot_sensors::imu_sensor_mail_box.free(message);
-            if(is_rosserial_on) imu_pub->publish(&imu_msg);
+            if(nh.connected()) imu_pub->publish(&imu_msg);
         }
 
         if((spin_result=nh.spinOnce()) != ros::SPIN_OK)

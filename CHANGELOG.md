@@ -84,6 +84,14 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
   - some code refactoring and updates
   - `DIAMETER_MODIFICATOR` factor update 
 
+## [0.7.0] - 2019-08-23
+
+### Added 
+  - `AnimationManager` class to control ws2812b's signalization
+
+### Changed
+  - Better rosserial interface for ws2812b signalization, now you can instantly change the animation and the color. 
+
 ## TODO
   - forward regulator controlling acceleration and deacceleration
   - virtual bumper using VL53L0X proximity sensors

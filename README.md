@@ -6,13 +6,12 @@ The ROSbot mobile platform's microcontroller firmware. Written in C++ using [arm
 </p> -->
 
 ```
-         _____     ____    _____                 
-        |  _  |   / ___|  |  _  |                
- __   __| |/' |  / /___   | |/' |                
- \ \ / /|  /| |  | ___ \  |  /| |                
-  \ V / \ |_/ /_ | \_/ | _\ |_/ /                
-   \_/   \___/(_)\_____/(_)\___/                 
-                                                      
+        _____    ______ _____ 
+       |  _  |  |___  /|  _  |
+__   __| |/' |     / / | |/' |
+\ \ / /|  /| |    / /  |  /| |
+ \ V / \ |_/ /_ ./ /_  \ |_/ /
+  \_/   \___/(_)\_/(_)  \___/ 
 ```                                                    
 
 
@@ -341,18 +340,30 @@ At the moment following commands are available:
     ```
 * `SANI` - SET WS2812B LEDS ANIMATION
 
-    To set animation run:
+    To enable the ws2812b interface open the `mbed_app.json` file and change the line:
+
+    ```json
+    "enable-ws2812b-signalization": 0
+    ```
+    to
+    ```json
+    "enable-ws2812b-signalization": 1
+    ```
+
+    To set fading blue animation run:
     ```bash
     $ rosservice call /config "command: `SANI`
-    >data: ''"
+    >data: 'F #0000aa'"
     ```
     
-    * `-1` - ws2812b interface off (default)
-    * `0` - PENDING (no animation)
-    * `1` - ACTIVE (fading blue)
-    * `2` - PREEMPTED (fading yellow)
-    * `3` - SUCCEEDED (fading green)
-    * `4` - ABORTED (flashing red front/rear)
+    Available commands:
+    * `O` - OFF
+    * `S <hex color code>` - SOLID COLOR 
+    * `F <hex color code>` - FADE IN FADE OUT ANIMATION
+    * `B <hex color code>` - BLINK FRONT/REAR ANIMATION
+    * `R` - RAINBOW ANIMATION
+
+### ROS requirements - `rosbot` package
 
 In order to use the service you have to download the package `rosbot` that can be found [HERE](https://github.com/adamkrawczyk/rosbot). Clone it to your `ros_ws/src` folder and run `catkin_make` to build it. Besides custom messages the package contains also a ready to use **Extended Kalman Filter** that combines both the imu and encoders measurements to better approximate the ROSbot position and orientation. 
 
@@ -361,7 +372,11 @@ To launch the rosserial communication and Kalman filter run:
 $ roslaunch rosbot all.launch
 ```
 
-If you have **ROSbot 2.0 PRO** you have to modify the `rosbot/launch/rosserial_to_roscore.launch` file like described in `rosserial interface` section. 
+For PRO version add parameter:
+
+```bash
+$ roslaunch rosbot all.launch rosbot_pro:=true
+```
 
 ## Versioning
 

@@ -3,7 +3,7 @@
         "enable-ws2812b-signalization":
         {
             "help": "Enable ws2812b signalization",
-            "macro_name": "WS2812B_LEDS_SIGNALIZATION",
+            "macro_name": "USE_WS2812B_ANIMATION_MANAGER",
             "value": 0,
             "required": false
         }
