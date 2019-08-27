@@ -6,12 +6,13 @@ The ROSbot mobile platform's microcontroller firmware. Written in C++ using [arm
 </p> -->
 
 ```
-        _____    ______ _____ 
-       |  _  |  |___  /|  _  |
-__   __| |/' |     / / | |/' |
-\ \ / /|  /| |    / /  |  /| |
- \ V / \ |_/ /_ ./ /_  \ |_/ /
-  \_/   \___/(_)\_/(_)  \___/ 
+        _____    ______ __  
+       |  _  |  |___  //  | 
+__   __| |/' |     / / `| | 
+\ \ / /|  /| |    / /   | | 
+ \ V / \ |_/ /_ ./ /_  _| |_
+  \_/   \___/(_)\_/(_) \___/
+                            
 ```                                                    
 
 
@@ -277,14 +278,14 @@ ROSbot publishes to:
 * `/range/rl` with message type `sensor_msgs/Range`
 * `/range/rr` with message type `sensor_msgs/Range`
 * `/joint_states` with message type `sensor_msgs/JointState`
-* `/mpu9250` with custom message type `rosbot/Imu`
+* `/mpu9250` with custom message type `rosbot_ekf/Imu`
 * `/buttons` with message type `std_msgs/UInt8`
 
 ROSbot provides service server:
-* `/config` with custom message type `rosbot/Configuration` 
+* `/config` with custom message type `rosbot_ekf/Configuration` 
 
 ```bash
-$ rossrv show rosbot/Configuration 
+$ rossrv show rosbot_ekf/Configuration 
 string command
 string data
 ---
@@ -363,21 +364,21 @@ At the moment following commands are available:
     * `B <hex color code>` - BLINK FRONT/REAR ANIMATION
     * `R` - RAINBOW ANIMATION
 
-### ROS requirements - `rosbot` package
+### ROS requirements - `rosbot_ekf` package
 
-In order to use the service you have to download the package `rosbot` that can be found [HERE](https://github.com/byq77/rosbot). For installation details check the [README](https://github.com/byq77/rosbot/blob/master/README.md). 
+In order to use the service you have to download the package `rosbot_ekf` that can be found [HERE](https://github.com/byq77/rosbot_ekf). For installation details check the [README](https://github.com/byq77/rosbot_ekf/blob/master/README.md). 
 
-The package contains the ready to use **Extended Kalman Filter** that combines both the imu and encoders measurements to better approximate the ROSbot position and orientation. The package also has the custom messages required by the new firmware.
+The package incorporate a ready to use **Extended Kalman Filter** that combines both the imu and encoders measurements to better approximate the ROSbot position and orientation. The package also contains custom messages that are required by the new firmware.
 
 To launch the rosserial communication and Kalman filter run:
 ```bash
-$ roslaunch rosbot all.launch
+$ roslaunch rosbot_ekf all.launch
 ```
 
 For PRO version add parameter:
 
 ```bash
-$ roslaunch rosbot all.launch rosbot_pro:=true
+$ roslaunch rosbot_ekf all.launch rosbot_pro:=true
 ```
 
 ## Versioning

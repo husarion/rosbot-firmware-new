@@ -92,6 +92,11 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
 ### Changed
   - Better rosserial interface for ws2812b signalization, now you can instantly change the animation and the color. 
 
+## [0.7.1] - 2019-08-27
+
+### Changes
+- the support package name changed from `rosbot` to `rosbot_ekf`
+
 ## TODO
   - forward regulator controlling acceleration and deacceleration
   - virtual bumper using VL53L0X proximity sensors

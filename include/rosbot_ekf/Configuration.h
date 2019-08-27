@@ -5,10 +5,10 @@
 #include <stdlib.h>
 #include "ros/msg.h"
 
-namespace rosbot
+namespace rosbot_ekf
 {
 
-static const char CONFIGURATION[] = "rosbot/Configuration";
+static const char CONFIGURATION[] = "rosbot_ekf/Configuration";
 
   class ConfigurationRequest : public ros::Msg
   {

@@ -10,13 +10,13 @@
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/BatteryState.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <rosbot/Imu.h>
+#include <rosbot_ekf/Imu.h>
 #include <sensor_msgs/BatteryState.h>
 #include <sensor_msgs/Range.h>
 #include "tf/tf.h"
 #include "tf/transform_broadcaster.h"
 #include <std_msgs/UInt8.h>
-#include <rosbot/Configuration.h>
+#include <rosbot_ekf/Configuration.h>
 #include <map>
 #include <string>
 
@@ -43,7 +43,7 @@ sensor_msgs::BatteryState battery_state;
 sensor_msgs::Range range_msg[4];
 geometry_msgs::PoseStamped pose;
 std_msgs::UInt8 button_msg;
-rosbot::Imu imu_msg;
+rosbot_ekf::Imu imu_msg;
 ros::NodeHandle nh;
 ros::Publisher *vel_pub;
 ros::Publisher *joint_state_pub;
@@ -270,9 +270,9 @@ uint8_t ConfigFunctionality::enableTfMessages(const char *datain, const char **d
         {
             initTfPublisher();
         }
-        return rosbot::Configuration::Response::SUCCESS; 
+        return rosbot_ekf::Configuration::Response::SUCCESS; 
     }
-    return rosbot::Configuration::Response::FAILURE;
+    return rosbot_ekf::Configuration::Response::FAILURE;
 }
 
 //TODO change the implementation
@@ -304,10 +304,10 @@ uint8_t ConfigFunctionality::setAnimation(const char *datain, const char **datao
             if(parseColorStr(&datain[2], &color)) anim_manager->setSolidColor(&color);
             break;
         default:
-            return rosbot::Configuration::Response::FAILURE;
+            return rosbot_ekf::Configuration::Response::FAILURE;
     }
 #endif
-    return rosbot::Configuration::Response::SUCCESS;
+    return rosbot_ekf::Configuration::Response::SUCCESS;
 }
 
 ConfigFunctionality::configuration_srv_fun_t ConfigFunctionality::findFunctionality(const char *command)
@@ -323,7 +323,7 @@ uint8_t ConfigFunctionality::resetImu(const char *datain, const char **dataout)
 {
     *dataout = NULL;
     rosbot_sensors::resetImu();
-    return rosbot::Configuration::Response::SUCCESS;
+    return rosbot_ekf::Configuration::Response::SUCCESS;
 }
 
 uint8_t ConfigFunctionality::setMotorsAccelDeaccel(const char *datain, const char **dataout)
@@ -337,16 +337,16 @@ uint8_t ConfigFunctionality::setMotorsAccelDeaccel(const char *datain, const cha
         new_pid_params.a_max = accel;
         new_pid_params.da_max = deaccel;
         driver->updatePidParams(&new_pid_params,true);
-        return rosbot::Configuration::Response::SUCCESS; 
+        return rosbot_ekf::Configuration::Response::SUCCESS; 
     }
-    return rosbot::Configuration::Response::FAILURE;
+    return rosbot_ekf::Configuration::Response::FAILURE;
 }
 
 uint8_t ConfigFunctionality::resetOdom(const char *datain, const char **dataout)
 {
     *dataout = NULL;
     rosbot_kinematics::resetRosbotOdometry(driver,&odometry);
-    return rosbot::Configuration::Response::SUCCESS;
+    return rosbot_ekf::Configuration::Response::SUCCESS;
 }
 
 uint8_t ConfigFunctionality::enableImu(const char *datain, const char **dataout)
@@ -357,9 +357,9 @@ uint8_t ConfigFunctionality::enableImu(const char *datain, const char **dataout)
     {
         events::EventQueue * q = mbed_event_queue();
         q->call(Callback<void(int)>(&rosbot_sensors::enableImu),en);
-        return rosbot::Configuration::Response::SUCCESS; 
+        return rosbot_ekf::Configuration::Response::SUCCESS; 
     }
-    return rosbot::Configuration::Response::FAILURE;
+    return rosbot_ekf::Configuration::Response::FAILURE;
 }
 
 uint8_t ConfigFunctionality::enableJointStates(const char *datain, const char **dataout)
@@ -369,9 +369,9 @@ uint8_t ConfigFunctionality::enableJointStates(const char *datain, const char **
     if(sscanf(datain,"%d",&en) == 1)
     {
         joint_states_enabled = (en == 0 ? false : true);
-        return rosbot::Configuration::Response::SUCCESS; 
+        return rosbot_ekf::Configuration::Response::SUCCESS; 
     }
-    return rosbot::Configuration::Response::FAILURE;
+    return rosbot_ekf::Configuration::Response::FAILURE;
 }
 
 uint8_t ConfigFunctionality::enableDistanceSensors(const char *datain, const char **dataout)
@@ -399,9 +399,9 @@ uint8_t ConfigFunctionality::enableDistanceSensors(const char *datain, const cha
                 sensor->startContinuous();
             }
         }
-        return rosbot::Configuration::Response::SUCCESS; 
+        return rosbot_ekf::Configuration::Response::SUCCESS; 
     }
-    return rosbot::Configuration::Response::FAILURE;
+    return rosbot_ekf::Configuration::Response::FAILURE;
 }
 
 uint8_t ConfigFunctionality::setLed(const char *datain, const char **dataout)
@@ -414,15 +414,15 @@ uint8_t ConfigFunctionality::setLed(const char *datain, const char **dataout)
         {
             case 2:
                 led2 = led_state;
-                return rosbot::Configuration::Response::SUCCESS;
+                return rosbot_ekf::Configuration::Response::SUCCESS;
             case 3:
                 led3 = led_state;
-                return rosbot::Configuration::Response::SUCCESS;
+                return rosbot_ekf::Configuration::Response::SUCCESS;
             default:
                 break;
         }
     }
-    return rosbot::Configuration::Response::FAILURE;
+    return rosbot_ekf::Configuration::Response::FAILURE;
 }
 
 uint8_t ConfigFunctionality::enableSpeedWatchdog(const char *datain, const char **dataout)
@@ -432,9 +432,9 @@ uint8_t ConfigFunctionality::enableSpeedWatchdog(const char *datain, const char 
     if(sscanf(datain,"%d",&en) == 1)
     {
         is_speed_watchdog_enabled = (en == 0 ? false : true);
-        return rosbot::Configuration::Response::SUCCESS; 
+        return rosbot_ekf::Configuration::Response::SUCCESS; 
     }
-    return rosbot::Configuration::Response::FAILURE;
+    return rosbot_ekf::Configuration::Response::FAILURE;
 }
 
 ConfigFunctionality * ConfigFunctionality::getInstance()
@@ -446,7 +446,7 @@ ConfigFunctionality * ConfigFunctionality::getInstance()
     return _instance;
 }
 
-void responseCallback(const rosbot::Configuration::Request & req, rosbot::Configuration::Response & res)
+void responseCallback(const rosbot_ekf::Configuration::Request & req, rosbot_ekf::Configuration::Response & res)
 {
     ConfigFunctionality * config_functionality = ConfigFunctionality::getInstance();
     ConfigFunctionality::configuration_srv_fun_t fun = config_functionality->findFunctionality(req.command); 
@@ -458,7 +458,7 @@ void responseCallback(const rosbot::Configuration::Request & req, rosbot::Config
     else
     {
         nh.loginfo("Command not found!");
-        res.result = rosbot::Configuration::Response::COMMAND_NOT_FOUND;
+        res.result = rosbot_ekf::Configuration::Response::COMMAND_NOT_FOUND;
     }
 }
 
@@ -531,7 +531,7 @@ int main()
        nh.logerror("MPU9250 initialisation failure!");
 
     ros::Subscriber<geometry_msgs::Twist> cmd_vel_sub("/cmd_vel", &velocityCallback);
-    ros::ServiceServer<rosbot::Configuration::Request,rosbot::Configuration::Response> config_srv("/config", responseCallback);
+    ros::ServiceServer<rosbot_ekf::Configuration::Request,rosbot_ekf::Configuration::Response> config_srv("/config", responseCallback);
     nh.advertiseService(config_srv);
     nh.subscribe(cmd_vel_sub);
     

@@ -1,5 +1,5 @@
-#ifndef _ROS_rosbot_Imu_h
-#define _ROS_rosbot_Imu_h
+#ifndef _ROS_rosbot_ekf_Imu_h
+#define _ROS_rosbot_ekf_Imu_h
 
 #include <stdint.h>
 #include <string.h>
@@ -7,7 +7,8 @@
 #include "ros/msg.h"
 #include "std_msgs/Header.h"
 #include "geometry_msgs/Quaternion.h"
-namespace rosbot
+
+namespace rosbot_ekf
 {
 
   class Imu : public ros::Msg
@@ -94,7 +95,7 @@ namespace rosbot
      return offset;
     }
 
-    const char * getType(){ return "rosbot/Imu"; };
+    const char * getType(){ return "rosbot_ekf/Imu"; };
     const char * getMD5(){ return "3d83bdcabfe2927ed38c36f102a9f646"; };
 
   };
