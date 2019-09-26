@@ -141,14 +141,14 @@ void SetSysClock(void)
 /******************************************************************************/
 uint8_t SetSysClock_PLL_HSE(uint8_t bypass)
 {
-    RCC_OscInitTypeDef RCC_OscInitStruct;
-    RCC_ClkInitTypeDef RCC_ClkInitStruct;
+    RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+    RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
     /* The voltage scaling allows optimizing the power consumption when the device is
        clocked below the maximum system frequency, to update the voltage scaling value
        regarding system frequency refer to product datasheet. */
     __HAL_RCC_PWR_CLK_ENABLE();
-    __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE2);
+    __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
     /* Enable HSE oscillator and activate PLL with HSE as source */
     RCC_OscInitStruct.OscillatorType      = RCC_OSCILLATORTYPE_HSE;
@@ -157,7 +157,7 @@ uint8_t SetSysClock_PLL_HSE(uint8_t bypass)
     } else {
         RCC_OscInitStruct.HSEState          = RCC_HSE_BYPASS; /* External 8 MHz clock on OSC_IN */
     }
-    RCC_OscInitStruct.HSIState            = RCC_HSI_OFF;
+    // RCC_OscInitStruct.HSIState            = RCC_HSI_OFF;
     RCC_OscInitStruct.PLL.PLLState        = RCC_PLL_ON;
     RCC_OscInitStruct.PLL.PLLSource       = RCC_PLLSOURCE_HSE;
     RCC_OscInitStruct.PLL.PLLM            = 8;             // VCO input clock = 1 MHz (8 MHz / 8)

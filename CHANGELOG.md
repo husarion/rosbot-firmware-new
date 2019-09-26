@@ -97,7 +97,11 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
 ### Changes
 - the support package name changed from `rosbot` to `rosbot_ekf`
 
+## [0.7.2] - 2019-09-26
+
+### Fixed
+  - critical changes in CORE2 target definitions
+
 ## TODO
   - forward regulator controlling acceleration and deacceleration
   - virtual bumper using VL53L0X proximity sensors
-
