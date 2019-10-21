@@ -232,7 +232,7 @@ $ rosrun rosserial_node serial_node.py.py _port:=<SBC_port_name> _baud:=<port_ba
 - `/dev/ttyS4` for UpBoard
 
 `<port_baudrate>`:
-- `230400` for UpBoard and Raspberry Pi
+- `460800` for UpBoard and Raspberry Pi
 - `500000` for Asus Tinker Board
 
 The baudrate can be adjusted for particular SBC, however it should be above `115200` to achieve smooth communication. The default value for this firmware is `500000` (ROSbot 2.0).
@@ -240,7 +240,7 @@ The baudrate can be adjusted for particular SBC, however it should be above `115
 You can build firmware for the another baudrate changing only one line in `mbed_app.json`:
 
 ```json
-"rosserial-mbed.baudrate": 230400,
+"rosserial-mbed.baudrate": 460800,
 ```
 
 The following `rosserial.launch` file can be used to start `roscore` and `rosserial_python` communication:
@@ -248,7 +248,7 @@ The following `rosserial.launch` file can be used to start `roscore` and `rosser
 ```xml
 <launch>
   <arg name="serial_port" default="/dev/ttyUSB0"/>
-  <arg name="serial_baudrate" default="230400"/>
+  <arg name="serial_baudrate" default="460800"/>
   <node pkg="rosserial_python" type="serial_node.py" name="serial_node" output="screen">
     <param name="port" value="$(arg serial_port)"/>
     <param name="baud" value="$(arg serial_baudrate)"/>
