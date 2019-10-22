@@ -1,5 +1,5 @@
 /** @file main.cpp
- * ROSbot firmware - 22th of October 2019 
+ * ROSbot firmware - 27th of June 2019 
  */
 #include <mbed.h>
 #include <RosbotDrive.h>
@@ -62,8 +62,6 @@ MultiDistanceSensor * distance_sensors;
 volatile bool distance_sensors_enabled = false;
 volatile bool joint_states_enabled = false;
 volatile bool tf_msgs_enabled = false;
-
-DigitalOut sens_power(SENS_POWER_ON,0);
 
 DigitalOut led2(LED2,0);
 DigitalOut led3(LED3,0);
@@ -507,10 +505,9 @@ int print_debug_info()
 }
 #endif /* MEMORY_DEBUG_INFO */
 
-int main()
+int test()
 {
-    ThisThread::sleep_for(100);
-    sens_power = 1; // power on sensors' line
+    DigitalOut sens_power(SENS_POWER_ON,1);
     odom_watchdog_timer.start();
 
     driver = RosbotDrive::getInstance(&rosbot_kinematics::ROSBOT_PARAMS);
@@ -525,46 +522,6 @@ int main()
     button1.fall(button1Callback);
     button2.fall(button2Callback);
 
-    nh.initNode();
-
-    uint8_t distance_sensors_init_flag = 0;
-    uint8_t imu_init_flag = 0;
-    bool welcome_flag = true;
-
-    string welcome_str = "ROSbot firmware "; welcome_str.append(ROSBOT_FW_VERSION);
-
-    if(distance_sensors->init(400000)==4)
-    {
-        distance_sensors_enabled = true;
-        for(int i=0;i<4;i++)
-        {
-            VL53L0X * sensor = distance_sensors->getSensor(i);
-            sensor->setTimeout(50); 
-            sensor->startContinuous();
-        }
-    }
-    else
-    {
-        distance_sensors_init_flag++; //TODO: error module
-    }
-
-    if(rosbot_sensors::initImu()!=INV_SUCCESS)
-    {
-        imu_init_flag++; //TODO: error module
-    }
-       
-    ros::Subscriber<geometry_msgs::Twist> cmd_vel_sub("/cmd_vel", &velocityCallback);
-    ros::ServiceServer<rosbot_ekf::Configuration::Request,rosbot_ekf::Configuration::Response> config_srv("/config", responseCallback);
-    nh.advertiseService(config_srv);
-    nh.subscribe(cmd_vel_sub);
-    
-    initBatteryPublisher();
-    initPosePublisher();
-    initVelocityPublisher();
-    initRangePublisher();
-    initJointStatePublisher();
-    initImuPublisher();
-    initButtonPublisher();
 
 #if USE_WS2812B_ANIMATION_MANAGER
     anim_manager = AnimationManager::getInstance();
@@ -578,153 +535,21 @@ int main()
     int spin_result;
     uint32_t spin_count=1;
     float curr_odom_calc_time, last_odom_calc_time = 0.0f;
-    
+
+    static NewTargetSpeed_t speed;
+    speed.mode = MPS;
+    for(int i=0;i<4;i++)
+        speed.speed[i]=0.2;
+
+    driver->updateTargetSpeed(&speed);
     while (1)
     {
 
-        if(is_speed_watchdog_enabled)
-        {
-            if(!is_speed_watchdog_active && (odom_watchdog_timer.read_ms() - last_speed_command_time) > speed_watchdog_interval)
-            {
-                rosbot_kinematics::setRosbotSpeed(driver, 0.0f, 0.0f);
-                is_speed_watchdog_active = true;
-            }
-        }
-
-#if USE_WS2812B_ANIMATION_MANAGER
-        if(!nh.connected()) anim_manager->enableInterface(false);
-#endif
-
-        curr_odom_calc_time = odom_watchdog_timer.read();
-        rosbot_kinematics::updateRosbotOdometry(driver,&odometry,curr_odom_calc_time-last_odom_calc_time);
-        last_odom_calc_time = curr_odom_calc_time;
-
-        if(button1_publish_flag)
-        {
-            button1_publish_flag = false;
-            if(!button1)
-            {
-                button_msg.data = 1;
-                if(nh.connected()) button_pub->publish(&button_msg);
-            }
-        }
-
-        if(button2_publish_flag)
-        {
-            button2_publish_flag = false;
-            if(!button2)
-            {
-                button_msg.data = 2;
-                if(nh.connected()) button_pub->publish(&button_msg);
-            }
-        }
-
-        if (spin_count % 5 == 0) /// cmd_vel, odometry, joint_states, tf messages
-        {
-            current_vel.linear.x = sqrt(odometry.robot_x_vel * odometry.robot_x_vel + odometry.robot_y_vel * odometry.robot_y_vel);
-            current_vel.angular.z = odometry.robot_angular_vel;
-            pose.pose.position.x = odometry.robot_x_pos;
-            pose.pose.position.y = odometry.robot_y_pos;
-            pose.pose.orientation = tf::createQuaternionFromYaw(odometry.robot_angular_pos);
-            
-            pose.header.stamp = nh.now();
-            if(nh.connected())  pose_pub->publish(&pose);
-            if(nh.connected())  vel_pub->publish(&current_vel);
-
-            if(joint_states_enabled)
-            {
-                pos[0] = odometry.wheel_FL_ang_pos;
-                pos[1] = odometry.wheel_FR_ang_pos;
-                pos[2] = odometry.wheel_RL_ang_pos;
-                pos[3] = odometry.wheel_RR_ang_pos;
-                joint_states.position = pos;
-                joint_states.header.stamp = pose.header.stamp; 
-                if(nh.connected()) joint_state_pub->publish(&joint_states);
-            }
-
-            if(tf_msgs_enabled)
-            {
-                robot_tf.header.stamp = pose.header.stamp; 
-                robot_tf.transform.translation.x = pose.pose.position.x;
-                robot_tf.transform.translation.y = pose.pose.position.y;
-                robot_tf.transform.rotation.x = pose.pose.orientation.x;
-                robot_tf.transform.rotation.y = pose.pose.orientation.y;
-                robot_tf.transform.rotation.z = pose.pose.orientation.z;
-                robot_tf.transform.rotation.w = pose.pose.orientation.w;
-                if(nh.connected()) broadcaster.sendTransform(robot_tf);
-            }
-        }
-
-        if(spin_count % 40 == 0)
-        {
-            battery_state.voltage = rosbot_sensors::updateBatteryWatchdog();
-            if(nh.connected()) battery_pub->publish(&battery_state);
-        }
-
-        if(spin_count % 20 == 0 && distance_sensors_enabled) // ~ 5 HZ
-        {
-            uint16_t range;
-            ros::Time t = nh.now();
-            for(int i=0;i<4;i++)
-            {
-                range = distance_sensors->getSensor(i)->readRangeContinuousMillimeters(false);
-                range_msg[i].header.stamp = t;
-                range_msg[i].range = (range != 65535) ? (float)range/1000.0f : -1.0f;
-                if(nh.connected()) range_pub[i]->publish(&range_msg[i]);
-            }
-        }
-        
-        osEvent evt = rosbot_sensors::imu_sensor_mail_box.get(0);
-
-        if(evt.status == osEventMail)
-        {
-            rosbot_sensors::imu_meas_t * message = (rosbot_sensors::imu_meas_t*)evt.value.p;
-
-            imu_msg.header.stamp = nh.now();
-            imu_msg.orientation.x = message->orientation[0];
-            imu_msg.orientation.y = message->orientation[1];
-            imu_msg.orientation.z = message->orientation[2];
-            imu_msg.orientation.w = message->orientation[3];
-            for(int i=0;i<3;i++)
-            {
-                imu_msg.angular_velocity[i] = message->angular_velocity[i];
-                imu_msg.linear_acceleration[i] = message->linear_velocity[i];
-            }
-            rosbot_sensors::imu_sensor_mail_box.free(message);
-            if(nh.connected()) imu_pub->publish(&imu_msg);
-        }
-        
-        // LOGS
-        if(nh.connected())
-        {
-            if(welcome_flag)
-            {
-                welcome_flag = false;
-                nh.loginfo(welcome_str.c_str());
-            }
-            if(distance_sensors_init_flag)
-            {
-                distance_sensors_init_flag--;
-                nh.logerror("VL53L0X sensors initialisation failure!");
-
-            }
-            if(imu_init_flag)
-            {
-                imu_init_flag--;
-                nh.logerror("MPU9250 initialisation failure!");
-            }
-        }
-        else
-        {
-            welcome_flag = true;
-        }
-
-        if((spin_result=nh.spinOnce()) != ros::SPIN_OK)
-        {
-            // nh.logwarn(spin_result == -1 ? "SPIN_ERR" : "SPIN_TIMEOUT");
-            do {}while(0); // do nothing at the moment
-        }
-        spin_count++;
-        ThisThread::sleep_for(MAIN_LOOP_INTERVAL_MS);
+        printf("%8d %8d %8d %8d\r\n" 
+        ,driver->getEncoderTicks(MOTOR_FR)
+        ,driver->getEncoderTicks(MOTOR_FL)
+        ,driver->getEncoderTicks(MOTOR_RR)
+        ,driver->getEncoderTicks(MOTOR_RL));
+        ThisThread::sleep_for(1000);
     }
 }

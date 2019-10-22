@@ -1,18 +1,14 @@
 # ROSbot firmware
-The ROSbot mobile platform's microcontroller firmware. Written in C++ using [arm's Mbed OS framework](https://os.mbed.com/). 
-
-<!-- <p align="center">
-<img width="800px" src=".img/pro.jpg"/>
-</p> -->
+The ROSbot mobile platform's microcontroller firmware. Written in C++ using [arm's Mbed OS framework](https://os.mbed.com/) ( `mbed-os-5.14.1`).
 
 ```
-        _____    ______ _____ 
-       |  _  |  |___  // __  \
-__   __| |/' |     / / `' / /'
-\ \ / /|  /| |    / /    / /  
- \ V / \ |_/ /_ ./ /_  ./ /___
-  \_/   \___/(_)\_/(_) \_____/
-                              
+        _____     _____     _____ 
+       |  _  |   |  _  |   |  _  |
+__   __| |/' |    \ V /    | |/' |
+\ \ / /|  /| |    / _ \    |  /| |
+ \ V / \ |_/ / _ | |_| | _ \ |_/ /
+  \_/   \___/ (_)\_____/(_) \___/ 
+                                  
 ```                                                    
 
 
@@ -31,8 +27,8 @@ You need following tools:
 ## Mbed CLI installation
 
 To install the tool follow the official documentation:
-* [Linux](https://os.mbed.com/docs/mbed-os/v5.12/tools/linux.html)
-* [Mac/Windows](https://os.mbed.com/docs/mbed-os/v5.12/tools/installation-and-setup.html)
+* [Linux](https://os.mbed.com/docs/mbed-os/v5.14/tools/manual-installation.html)
+* [Mac/Windows](https://os.mbed.com/docs/mbed-os/v5.14/tools/installation-and-setup.html)
 
 
 After installation set the path to the binary directory of your GCC Arm Embedded Compiler installation:
@@ -62,7 +58,7 @@ Set Mbed OS version to supported by this template:
 
 ```bash
 $ cd mbed-os
-$ mbed update mbed-os-5.13.3
+$ mbed update mbed-os-5.14.1
 ```
 
 During Mbed OS installation you can be asked to install additional python libraries. Switch to `mbed-os` dir and run:
@@ -108,7 +104,7 @@ usb/*
 
 Open Visual Studio Code, press `CTRL + SHIFT + P` and type `Git: Clone` in Command Pallet. Copy and paste `https://github.com/husarion/rosbot-firmware-new.git` URL.
 
-You will be prompted to select your repo location. Choose `core2-mbed-workspace` directory.
+You will be prompted to select your r\epo location. Choose `core2-mbed-workspace` directory.
 
 ### Updating project files
 Open `rosbot-firmware-new` in Visual Studio Code IDE. In `.vscode` directory find `settings.json` file and change the value of `C_cpp.default.compilerPath` with path to `arm-none-eabi-g++` location on your system:

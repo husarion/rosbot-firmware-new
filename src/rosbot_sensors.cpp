@@ -71,7 +71,7 @@ const Sensors_pin_def_t SENSORS_PIN_DEF={
 
 #pragma endregion DISTANCE_SENSOR_REGION
 
-#pragma region IMU_REGION
+#pragma region IMU_REGION //FIXME mutexes and other improvements
 
 volatile bool imu_state;
 
@@ -85,12 +85,21 @@ InterruptIn imu_int(SENS2_PIN1);
 
 Mail<imu_meas_t, 10> imu_sensor_mail_box;
 
+volatile uint16_t new_data = 0;
 static MPU9250_DMP imu;
+static Mutex imu_mutex;
+Thread imu_thread;
 
-void imuCallback()
+static void imu_interrupt_cb(void)
+{
+    core_util_atomic_incr_u16(&new_data,1);
+}
+
+static void imuCallback()
 {
     // Use dmpUpdateFifo to update the ax, gx, mx, etc. values
-    if(imu_state)
+    imu_mutex.lock();
+    if(imu.fifoAvailable())
     {
         if (imu.dmpUpdateFifo() == INV_SUCCESS)
         {
@@ -110,8 +119,20 @@ void imuCallback()
                 imu_sensor_mail_box.put(new_msg);
             }
         }
+        core_util_atomic_decr_u16(&new_data,1);
+    }
+    imu_mutex.unlock();
+}
+
+static void imu_loop()
+{
+    while(1)
+    {
+        if(new_data && imu_state) imuCallback();
+        ThisThread::sleep_for(20);
     }
 }
+
 
 int initImu()
 {
@@ -121,8 +142,10 @@ int initImu()
         return err;
     }
     imu_int.mode(PullUp);
-    events::EventQueue *q = mbed_event_queue();
-    imu_int.fall(q->event(callback(imuCallback)));
+
+    // events::EventQueue *q = mbed_event_queue();
+    // imu_int.fall(q->event(callback(imuCallback)));
+    imu_int.fall(callback(imu_interrupt_cb));
 
     err = imu.dmpBegin(DMP_FEATURE_6X_LP_QUAT     | // Enable 6-axis quat
                        DMP_FEATURE_GYRO_CAL       | // Use gyro calibration
@@ -132,7 +155,7 @@ int initImu()
 
     err = imu.dmpSetOrientation(DEFAULT_IMU_ORIENTATION);
     
-    err = imu.setGyroFSR(500); // 500dps for gyro
+    err = imu.setGyroFSR(2000); // 2000dps for gyro
 
     err = imu.setLPF(42); // 42Hz low pass filter
     
@@ -156,8 +179,10 @@ int initImu()
     err = imu.enableInterrupt(1);
     
     // Disable dmp - it is enabled on demand using enableImu()
-    err = imu.dmpState(1);
-    
+    // err = imu.dmpState(1);
+
+    imu_thread.start(callback(imu_loop));
+
     imu_state=true;
 
     return err;
@@ -165,21 +190,25 @@ int initImu()
 
 void enableImu(int en)
 {
+    imu_mutex.lock();
+    imu_state=en;
     imu.dmpState(en);
     imu.enableInterrupt(en);
-    imu_state=en;
+    imu_mutex.unlock();
 }
 
 int resetImu()
 {
     if(!imu_state)
         return INV_ERROR;
+    imu_mutex.lock();
     imu_state = false;
     enableImu(false);
     inv_error_t err;
 
     if ((err = imu.begin()) != INV_SUCCESS)
     {
+        imu_mutex.unlock();
         return err;
     }
 
@@ -191,7 +220,7 @@ int resetImu()
 
     err = imu.dmpSetOrientation(DEFAULT_IMU_ORIENTATION);
     
-    err = imu.setGyroFSR(500); // 500dps for gyro
+    err = imu.setGyroFSR(2000); // 500dps for gyro
 
     err = imu.setLPF(42); // 42Hz low pass filter
 
@@ -215,8 +244,11 @@ int resetImu()
     err = imu.enableInterrupt(1);
     
     // Disable dmp - it is enabled on demand using enableImu()
-    err = imu.dmpState(1);
+    // err = imu.dmpState(1);
+    
     imu_state = true;
+    
+    imu_mutex.unlock();
     return err;
 }
 

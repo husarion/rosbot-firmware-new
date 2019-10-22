@@ -1,4 +1,4 @@
-#include <test/pwm_test2.h>
+#include <test/imu-test.h>
 
 int main()
 {

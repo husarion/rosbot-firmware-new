@@ -102,6 +102,9 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
 ### Fixed
   - critical changes in CORE2 target definitions
 
+## [0.8.0] - 2019-10-22
+    //TODO
+    
 ## TODO
   - forward regulator controlling acceleration and deacceleration
   - virtual bumper using VL53L0X proximity sensors
