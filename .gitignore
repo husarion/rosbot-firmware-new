@@ -6,3 +6,5 @@ BUILD/mbed-os-debug
 mbed_settings.py
 mbed_settings.pyc
 .vscode/ipch
+core2-flasher
+.vscode/.cortex*
