@@ -127,10 +127,8 @@ $ mbed update master
 To build and flash your firmware press `CTRL + SHIFT + P` and type `Tasks: Run Task` in Command Pallete. Here is the list of available tasks: 
 * `BUILD (RELEASE)`
 * `BUILD (DEBUG)`
-* `FLASH FIRMWARE WHEN BOOTLOADER (RELEASE)`*
-* `FLASH FIRMWARE WHEN BOOTLOADER (DEBUG)`  *
-* `FLASH FIRMWARE NO BOOTLOADER (RELEASE)`  *
-* `FLASH FIRMWARE NO BOOTLOADER (DEBUG)`    *
+* `FLASH FIRMWARE (RELEASE)`*
+* `FLASH FIRMWARE (DEBUG)`  *
 * `CREATE STATIC MBED-OS LIB (RELEASE)`
 * `CREATE STATIC MBED-OS LIB (DEBUG)`
 * `BUILD FROM STATIC LIB (RELEASE)`
@@ -142,31 +140,18 @@ To build and flash your firmware press `CTRL + SHIFT + P` and type `Tasks: Run T
 
 You can add new tasks and customize existing ones by editing `task.json` file. 
 
-#### Building and uploading firmware (BOOTLOADER)
-
-> This method allows you to easily switch between both Mbed-os and hFramework.
-
-The software bootloader allows the use of Husarion Cloud and hFramework. You can find it in `TARGET_CORE2/bootloader_1_0_0_cortex.hex`. The instruction how to flash it can be found [here](https://husarion.com/manuals/core2/#updating-core2-bootloader).
-
-If you want to use the bootloader just add this lines to `mbed_app.json`:
-```json
-    "target.mbed_app_start":"0x08010000",
-    "target.mbed_rom_start":"0x08000000",
-    "target.mbed_rom_size":"0x100000"
-```
+#### Building firmware
 
 To build firmware use `BUILD (RELEASE)` or `BUILD (DEBUG)` tasks.
 
-To flash firmware connect ST-LINK to debug connector of CORE2 and use `FLASH FIRMWARE WHEN BOOTLOADER (RELEASE)` or `FLASH FIRMWARE WHEN BOOTLOADER (DEBUG)` task.
+The debug version is intended to be used with ST-LINK probe. You can launch debugger in VSC by pressing `CTRL + SHIFT + D`. We use `Cortex-Debug` extension and `ST-Util GDB`.
 
-#### Building and uploading firmware (NO BOOTLOADER)
+#### Uploading firmware using ST-Link
 > Before proceeding with the following steps make sure you conducted mass erase of the memory and made all flash memory sectors write unprotected.
 
-To build firmware use `BUILD (RELEASE)` or `BUILD (DEBUG)` tasks.
+To flash firmware connect ST-LINK to debug connector of CORE2 and use `FLASH FIRMWARE (RELEASE)` or `FLASH FIRMWARE (DEBUG)` task.
 
-To flash firmware connect ST-LINK to debug connector of CORE2 and use `FLASH FIRMWARE NO BOOTLOADER (RELEASE)` or `FLASH FIRMWARE NO BOOTLOADER (DEBUG)` task.
-
-#### Flashing firmware using `core2-flasher`
+#### Uploading firmware using `core2-flasher`
 
 ```bash
 $ arm-none-eabi-objcopy -O ihex firmware.elf firmware.hex 
@@ -178,8 +163,8 @@ You will find `firmware.elf` in `./BUILD/RELEASE` or `./BUILD/DEBUG`.
 Here you can learn where to find `core2-flasher` for your system:
 https://husarion.com/manuals/core2/#updating-core2-bootloader
 
-#### Flashing firmware using `stm32loader`
-https://github.com/byq77/stm32loader
+#### Uploading firmware using `stm32loader`
+https://github.com/husarion/stm32loader
 
 This tool allows you to upload firmware using RPi connector.
 
@@ -198,6 +183,8 @@ where `<your_sbc>` :
 * `tinker` for Asus Tinker Board
 * `upboard` for Upboard
 * `rpi` for Raspberry Pi
+
+You will find `firmware.bin` in `./BUILD/RELEASE` or `./BUILD/DEBUG`.
 
 ### Debug
 
@@ -228,10 +215,11 @@ $ rosrun rosserial_node serial_node.py.py _port:=<SBC_port_name> _baud:=<port_ba
 - `/dev/ttyS4` for UpBoard
 
 `<port_baudrate>`:
-- `460800` for UpBoard and Raspberry Pi
+- `460800` for UpBoard
 - `500000` for Asus Tinker Board
+- `230400` for Raspberry Pi
 
-The baudrate can be adjusted for particular SBC, however it should be above `115200` to achieve smooth communication. The default value for this firmware is `500000` (ROSbot 2.0).
+The baudrate should be adjusted for SBC you use. The default value for this firmware is `500000` (ROSbot 2.0).
 
 You can build firmware for the another baudrate changing only one line in `mbed_app.json`:
 
@@ -244,7 +232,7 @@ The following `rosserial.launch` file can be used to start `roscore` and `rosser
 ```xml
 <launch>
   <arg name="serial_port" default="/dev/ttyUSB0"/>
-  <arg name="serial_baudrate" default="460800"/>
+  <arg name="serial_baudrate" default="500000"/>
   <node pkg="rosserial_python" type="serial_node.py" name="serial_node" output="screen">
     <param name="port" value="$(arg serial_port)"/>
     <param name="baud" value="$(arg serial_baudrate)"/>
@@ -300,13 +288,16 @@ At the moment following commands are available:
     $ rosservice call /config "command: 'SLED'
     >data: '2 1'" 
     ```
-*  `EIMU` - ENABLE IMU:
+*  `EIMU` - ENABLE/DISABLE IMU:
 
     To enable IMU MPU9250 run:
     ```bash
     $ rosservice call /config "command: 'EIMU'
     >data: '1'" 
     ```
+    * `data: '1'` - enable
+    * `data: '0'` - disable
+
 * `RIMU` - RESET IMU (for Kalman related odometry)
 
     To reset IMU MPU9250 run:
@@ -314,20 +305,27 @@ At the moment following commands are available:
     $ rosservice call /config "command: 'RIMU'
     >data: ''"
     ``` 
-* `EDSE` - ENABLE DISTANCE SENSORS:
+
+* `EDSE` - ENABLE/DISABLE DISTANCE SENSORS:
     
     To enable VL53LX0 distance sensors run:
     ```bash
     $ rosservice call /config "command: 'EDSE'
     >data: '1'" 
     ```
-* `EJSM` -  ENABLE JOINT STATES MESSAGES
+    * `data: '1'` - enable
+    * `data: '0'` - disable
+    
+* `EJSM` -  ENABLE/DISABLE JOINT STATES MESSAGES
 
     To enable JointStates messages run:
     ```bash
     $ rosservice call /config "command: `EJSM`
     >data: '1'"
     ```
+    * `data: '1'` - enable
+    * `data: '0'` - disable
+
 * `RODOM` - RESET ODOMETRY
 
     To reset odometry run:
@@ -362,7 +360,7 @@ At the moment following commands are available:
 
 ### ROS requirements - `rosbot_ekf` package
 
-In order to use the service you have to download the package `rosbot_ekf` that can be found [HERE](https://github.com/byq77/rosbot_ekf). For installation details check the [README](https://github.com/byq77/rosbot_ekf/blob/master/README.md). 
+In order to use the service you have to download the package `rosbot_ekf` that can be found [HERE](https://github.com/husarion/rosbot_ekf). For installation details check the [README](https://github.com/husarion/rosbot_ekf/blob/master/README.md). 
 
 The package incorporate a ready to use **Extended Kalman Filter** that combines both the imu and encoders measurements to better approximate the ROSbot position and orientation. The package also contains custom messages that are required by the new firmware.
 
@@ -388,5 +386,5 @@ See [CHANGELOG.md](CHANGELOG.md).
 ## Starting with Mbed OS
 
 Documentation:
-* [MBED OS Documentation](https://os.mbed.com/docs/v5.12/)
-* [MBED OS API Doxygen](https://os.mbed.com/docs/v5.12/mbed-os-api-doxy/modules.html)
+* [MBED OS Documentation](https://os.mbed.com/docs/v5.14/)
+* [MBED OS API Doxygen](https://os.mbed.com/docs/v5.14/mbed-os-api-doxy/modules.html)

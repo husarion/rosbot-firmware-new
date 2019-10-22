@@ -103,8 +103,19 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
   - critical changes in CORE2 target definitions
 
 ## [0.8.0] - 2019-10-22
-    //TODO
-    
+
+### Changed
+  - mpu9250 i2c implementation changed to non-blocking
+  - increased baudrate for Upboard
+  - distance sensors enabled by default
+  - mbed version changed to `5.14.1`
+
+### Added  
+  - firmware version is now printed as ros log
+
+### Fixed
+  - mpu9250 related bugs
+
 ## TODO
   - forward regulator controlling acceleration and deacceleration
   - virtual bumper using VL53L0X proximity sensors
