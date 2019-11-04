@@ -44,20 +44,20 @@ extern const RosbotDrive_params_t ROSBOT_PARAMS;
 
 typedef struct RosbotOdometry
 {
-    double wheel_FR_ang_pos;  // radians
-    double wheel_FL_ang_pos;  // radians
-    double wheel_RR_ang_pos;  // radians
-    double wheel_RL_ang_pos;  // radians
-    double wheel_L_ang_pos;   // radians
-    double wheel_R_ang_pos;   // radians
-    double wheel_L_ang_vel;   // radians per second
-    double wheel_R_ang_vel;   // radians per second
-    double robot_angular_pos; // radians
-    double robot_angular_vel; // radians per second
-    double robot_x_pos;       // meters
-    double robot_y_pos;       // meters
-    double robot_x_vel;       // meters per second
-    double robot_y_vel;       // meters per second
+    float wheel_FR_ang_pos;  // radians
+    float wheel_FL_ang_pos;  // radians
+    float wheel_RR_ang_pos;  // radians
+    float wheel_RL_ang_pos;  // radians
+    float wheel_L_ang_pos;   // radians
+    float wheel_R_ang_pos;   // radians
+    float wheel_L_ang_vel;   // radians per second
+    float wheel_R_ang_vel;   // radians per second
+    float robot_angular_pos; // radians
+    float robot_angular_vel; // radians per second
+    float robot_x_pos;       // meters
+    float robot_y_pos;       // meters
+    float robot_x_vel;       // meters per second
+    float robot_y_vel;       // meters per second
     RosbotOdometry()
         :wheel_FR_ang_pos(0)
         ,wheel_FL_ang_pos(0)

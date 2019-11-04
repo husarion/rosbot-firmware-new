@@ -3,7 +3,7 @@
 namespace rosbot_kinematics {
 
 const RosbotDrive_params_t ROSBOT_PARAMS = {
-    .pid_params = RosbotDrive::DEFAULT_PID_PARAMS,
+    .pid_params = RosbotDrive::DEFAULT_REGULATOR_PARAMS,
     .wheel_params = {
         .radius = WHEEL_RADIUS,
         .diameter_modificator = DIAMETER_MODIFICATOR,
@@ -15,7 +15,8 @@ const RosbotDrive_params_t ROSBOT_PARAMS = {
 
 void setRosbotSpeed(RosbotDrive * drive, float linear, float angular)
 {
-    static NewTargetSpeed_t new_speed;
+    NewTargetSpeed_t new_speed;
+    new_speed.mode = MPS;
     new_speed.speed[MOTOR_FL] = new_speed.speed[MOTOR_RL] = linear - (angular * ROBOT_WIDTH_HALF);
     new_speed.speed[MOTOR_FR] = new_speed.speed[MOTOR_RR] = linear + (angular * ROBOT_WIDTH_HALF);
     drive->updateTargetSpeed(&new_speed);
@@ -23,8 +24,8 @@ void setRosbotSpeed(RosbotDrive * drive, float linear, float angular)
 
 void updateRosbotOdometry(RosbotDrive * drive, RosbotOdometry_t * odom, float dtime)
 {
-    double curr_wheel_R_ang_pos;
-    double curr_wheel_L_ang_pos;
+    float curr_wheel_R_ang_pos;
+    float curr_wheel_L_ang_pos;
     odom->wheel_FR_ang_pos = drive->getAngularPos(MOTOR_FR);
     odom->wheel_FL_ang_pos = drive->getAngularPos(MOTOR_FL);
     odom->wheel_RR_ang_pos = drive->getAngularPos(MOTOR_RR);

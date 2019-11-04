@@ -335,7 +335,7 @@ uint8_t ConfigFunctionality::setMotorsAccelDeaccel(const char *datain, const cha
     //TODO: range
     if(sscanf(datain,"%f %f",&accel, deaccel) == 2)
     {
-        RosobtDrivePid new_pid_params = RosbotDrive::DEFAULT_PID_PARAMS;
+        RosobtDrivePid new_pid_params = RosbotDrive::DEFAULT_REGULATOR_PARAMS;
         new_pid_params.a_max = accel;
         new_pid_params.da_max = deaccel;
         driver->updatePidParams(&new_pid_params,true);

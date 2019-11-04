@@ -87,6 +87,7 @@ In `mbed-os` directory create `.mbedignore` (filename starts with dot) file with
 features/cellular/*
 features/cryptocell/*
 features/deprecated_warnings/*
+features/device_key/*
 features/lorawan/*
 features/lwipstack/*
 features/nanostack/*
@@ -94,10 +95,11 @@ features/netsocket/*
 features/nfc/*
 features/unsupported/*
 components/wifi/*
+components/cellular/*
 components/802.15.4_RF/*
+components/TARGET_PSA/*
 targets/TARGET_STM/TARGET_STM32F4/TARGET_STM32F407xG/device/TOOLCHAIN_GCC_ARM/STM32F407XG.ld
 targets/TARGET_STM/TARGET_STM32F4/TARGET_STM32F407xG/device/TOOLCHAIN_GCC_ARM/startup_stm32f407xx.S
-usb/*
 ```
 
 ## Using firmware

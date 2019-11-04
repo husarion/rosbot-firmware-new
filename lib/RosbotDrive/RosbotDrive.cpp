@@ -1,89 +1,7 @@
 #include "RosbotDrive.h"
+#include "RosbotRegulatorCMSIS.h"
+
 #define FOR(x) for(int i=0;i<x;i++)
-
-/***************************CMSIS-DSP-PID***************************/
-/*
- * Copyright (C) 2010-2017 ARM Limited or its affiliates. All rights reserved.
- *
- * SPDX-License-Identifier: Apache-2.0
- *
- * Licensed under the Apache License, Version 2.0 (the License); you may
- * not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an AS IS BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-#if 0
-/**
-* @brief  Process function for the floating-point PID Control.
-* @param[in,out] S   is an instance of the floating-point PID Control structure
-* @param[in]     in  input sample to process
-* @return out processed output sample.
-*/
-static __INLINE float32_t arm_pid_f32(
-    arm_pid_instance_f32 *S,
-    float32_t in)
-{
-    float32_t out;
-
-    /* y[n] = y[n-1] + A0 * x[n] + A1 * x[n-1] + A2 * x[n-2]  */
-    out = (S->A0 * in) +
-          (S->A1 * S->state[0]) + (S->A2 * S->state[1]) + (S->state[2]);
-
-    /* Update state */
-    S->state[1] = S->state[0];
-    S->state[0] = in;
-    S->state[2] = out;
-
-    /* return to application */
-    return (out);
-}
-#endif
-
-void arm_pid_init_f32(
-  arm_pid_instance_f32 * S,
-  int32_t resetStateFlag)
-{
-
-  /* Derived coefficient A0 */
-  S->A0 = S->Kp + S->Ki + S->Kd;
-
-  /* Derived coefficient A1 */
-  S->A1 = (-S->Kp) - ((float32_t) 2.0 * S->Kd);
-
-  /* Derived coefficient A2 */
-  S->A2 = S->Kd;
-
-  /* Check whether state needs reset or not */
-  if(resetStateFlag)
-  {
-    /* Clear the state buffer.  The size will be always 3 samples */
-    memset(S->state, 0, 3u * sizeof(float32_t));
-  }
-
-}
-
-/**    
-* @brief  Reset function for the floating-point PID Control.   
-* @param[in] *S	Instance pointer of PID control data structure.   
-* @return none.    
-* \par Description:   
-* The function resets the state buffer to zeros.    
-*/
-void arm_pid_reset_f32(
-  arm_pid_instance_f32 * S)
-{
-
-  /* Clear the state buffer.  The size will be always 3 samples */
-  memset(S->state, 0, 3u * sizeof(float32_t));
-}
-/***************************CMSIS-DSP-PID***************************/
 
 static const DRV8848_Params_t DEFAULT_MDRV1_PARAMS{
     MOT1A_IN,
@@ -105,15 +23,16 @@ static const DRV8848_Params_t DEFAULT_MDRV2_PARAMS{
     MOT34_FAULT,
     MOT34_SLEEP};
 
-const RosbotWheel_t RosbotDrive::DEFAULT_WHEEL_PARAMS = {
+const RosbotWheel RosbotDrive::DEFAULT_WHEEL_PARAMS = {
     .radius = 0.0425,
     .diameter_modificator = 1.0f,
     .tyre_deflection = 1.0f,
     .gear_ratio = 46.85,
-    .encoder_cpr = 48
+    .encoder_cpr = 48,
+    .polarity = 0b00111100,
 };
 
-const RosbotDrivePid_t RosbotDrive::DEFAULT_PID_PARAMS = {
+const RosbotRegulator_params RosbotDrive::DEFAULT_REGULATOR_PARAMS = {
     .kp = 0.8,
     .ki = 0.2,
     .kd = 0.015,
@@ -124,89 +43,48 @@ const RosbotDrivePid_t RosbotDrive::DEFAULT_PID_PARAMS = {
     .speed_max = 1.5,
     .dt_ms = 10};
 
-#if ROSBOT_DRIVE_TYPE == 4
-static DRV8848 mot_driver1(&DEFAULT_MDRV1_PARAMS); 
-static DRV8848 mot_driver2(&DEFAULT_MDRV2_PARAMS);
-static Encoder encoder[ROSBOT_DRIVE_TYPE] = 
-{
-    Encoder(ENCODER_1),
-    Encoder(ENCODER_2),
-    Encoder(ENCODER_3),
-    Encoder(ENCODER_4)
-};
-#else
-static DRV8848 mot_driver1(&DEFAULT_MDRV1_PARAMS);
-static Encoder encoder[ROSBOT_DRIVE_TYPE] = 
-{
-    Encoder(ENCODER_1),
-    Encoder(ENCODER_2)
-};
-#endif
-
-static arm_pid_instance_f32 pid_instace[4];
+static TIM_TypeDef * encoder_timer[] = { ENCODER_1, ENCODER_2, ENCODER_3, ENCODER_4 };
 RosbotDrive * RosbotDrive::_instance = NULL;
 
 Thread regulator_thread(osPriorityHigh);
 
-int RosbotDrive::getRosbotDriveType()
-{return ROSBOT_DRIVE_TYPE;}
-
-RosbotDrive::RosbotDrive(const RosbotDrive_params_t * params)
+RosbotDrive::RosbotDrive()
 : _state(UNINIT)
-, _pid_state(false)
-, _regulator_state(true)
-, _pid_params(params->pid_params)
-, _polarity(params->polarity)
+, _regulator_output_enabled(false)
+, _regulator_loop_enabled(false)
+, _tspeed_mps{0,0,0,0}
+, _cspeed_mps{0,0,0,0}
+, _cdistance{0,0,0,0}
+{}
+
+RosbotDrive & RosbotDrive::getInstance()
 {
-#if ROSBOT_DRIVE_TYPE == 2
-    _mot_driver[0] = &mot_driver1;
-    FOR(ROSBOT_DRIVE_TYPE) _encoder[i] = &encoder[i]; 
-#elif ROSBOT_DRIVE_TYPE == 4
-    _mot_driver[0] = &mot_driver1;
-    _mot_driver[1] = &mot_driver2;
-    FOR(ROSBOT_DRIVE_TYPE) _encoder[i] = &encoder[i]; 
-#endif
-    FOR(4)
+    if(_instance==NULL)
     {
-        _mot[i] = NULL;
-        _pid_instance[i] = &pid_instace[i];
-        _tspeed_mps[i]=0;
-        _cspeed_mps[i]=0;
-        _cdistance[i]=0;
+        static RosbotDrive instance;
+        _instance = &instance;
     }
-    updateWheelParams(&params->wheel_params);
-    _pid_interval_s = params->pid_params.dt_ms/1000.0f;
+    return *_instance;
 }
 
-RosbotDrive * RosbotDrive::getInstance(const RosbotDrive_params_t * params)
-{
-    if(_instance==NULL && params!=NULL)
-    {
-        _instance = new RosbotDrive(params);
-    }
-    return _instance;
-}
-
-void RosbotDrive::init(void)
+void RosbotDrive::init(const RosbotWheel & wheel_params, const RosbotRegulator_params & params)
 {
     static bool initialized = false;
     if(initialized)
         return;
     
-    switch(ROSBOT_DRIVE_TYPE)
-    {
-        case 2:
-            FOR(2) _mot[i]=_mot_driver[0]->getDCMotor((MotNum)i);
-            break;
-        case 4:
-            FOR(2) _mot[i]=_mot_driver[0]->getDCMotor((MotNum)i);
-            FOR(2) _mot[i+2]=_mot_driver[1]->getDCMotor((MotNum)i);
-            break;
-        default:
-            return;
-    }
+    rosbot_drive_mutex.lock();
     
-    FOR(ROSBOT_DRIVE_TYPE)
+    _mot_driver[0]= new DRV8848(&DEFAULT_MDRV1_PARAMS);
+    _mot_driver[1]= new DRV8848(&DEFAULT_MDRV2_PARAMS);
+    FOR(2) _mot[i]=_mot_driver[0]->getDCMotor((MotNum)i);
+    FOR(2) _mot[i+2]=_mot_driver[1]->getDCMotor((MotNum)i);
+    FOR(4) _encoder[i] = new Encoder(encoder_timer[i]);
+    FOR(4) _regulator[i] = new RosbotRegulatorCMSIS(params);
+    _pid_interval_s = params.dt_ms/1000.0f;
+    updateWheelParams(&params->wheel_params);
+
+    FOR(4)
     {
         _mot[i]->setPolarity(_polarity>>i & 1);
         _mot[i]->init(PWM_DEFAULT_FREQ_HZ);
@@ -218,7 +96,7 @@ void RosbotDrive::init(void)
         _pid_instance[i]->Kd = _pid_params.kd;
         arm_pid_init_f32(_pid_instance[i],1);
     }
-
+    
     _mot_driver[0]->enable(true);
     if(ROSBOT_DRIVE_TYPE==4)
         _mot_driver[1]->enable(true);
@@ -226,6 +104,8 @@ void RosbotDrive::init(void)
     regulator_thread.start(callback(this,&RosbotDrive::regulatorLoop));
     initialized = true;
     _state=HALT;
+
+    rosbot_drive_mutex.unlock();
 }
 
 void RosbotDrive::enable(bool en)
@@ -265,52 +145,6 @@ void RosbotDrive::enable(bool en)
     }
 }
 
-#if 0 // old implementation
-void RosbotDrive::regulatorLoop()
-{
-    //TODO: Add acceleration and deacceleration cotrol and fault handling
-    uint64_t sleepTime;
-    int32_t distance;
-    float pidout,tmp, cspeed_mps;
-    while (1)
-    {
-        sleepTime = Kernel::get_ms_count() + _pid_params.dt_ms;
-        tmp = _wheel_coefficient1 * 1000.0f / _pid_params.dt_ms; // TODO: update with wheel_coefficient
-        FOR(ROSBOT_DRIVE_TYPE)
-        {
-            distance = _encoder[i]->getCount();
-            cspeed_mps = (float)(distance - _cdistance[i])*tmp;
-            _caccel_mps2[i] = (cspeed_mps - _cspeed_mps[i])/(1000.0f / _pid_params.dt_ms);
-            _cspeed_mps[i] = cspeed_mps; 
-            _cdistance[i] = distance;
-        }
-        if((_state == OPERATIONAL) && _pid_state)
-        {
-            FOR(ROSBOT_DRIVE_TYPE)
-            {
-                _error[i] = _tspeed_mps[i]-_cspeed_mps[i];
-                pidout = arm_pid_f32(_pid_instance[i],_error[i]);
-                _pidout[i] = (pidout > _pid_params.out_max ? _pid_params.out_max :(pidout < _pid_params.out_min ? _pid_params.out_min : pidout));
-                _mot[i]->setPower(_pidout[i]);  
-            } 
-        }
-        ThisThread::sleep_until(sleepTime);
-    }
-}
-#endif
-
-template <typename T> int sgn(T val) {
-    return (T(0) > val) ? -1 : 1 ;
-}
-
-static inline bool isacc(float * tspeed, float * cspeed)
-{
-    if (sgn(*tspeed) == sgn(*cspeed))
-        return (fabs(*tspeed)>fabs(*cspeed));
-    else
-        return false;
-}
-
 void RosbotDrive::regulatorLoop()
 {
     uint64_t sleepTime;
@@ -318,10 +152,10 @@ void RosbotDrive::regulatorLoop()
     float pidout, a, b, c, d, tmp_tspeed = 0.0;
     while (1)
     {
-        if (_regulator_state)
+        sleepTime = Kernel::get_ms_count() + _pid_params.dt_ms;
+        if (_regulator_loop_enabled) //TODO: change to mutex with fixed held time
         {
 
-            sleepTime = Kernel::get_ms_count() + _pid_params.dt_ms;
             a = _wheel_coefficient1 / _pid_interval_s;
             // b = _pid_params.a_max * _pid_interval_s;
             // c = _pid_params.da_max * _pid_interval_s;
@@ -356,7 +190,8 @@ void RosbotDrive::regulatorLoop()
 
                 _error[i] = tmp_tspeed - _cspeed_mps[i];
             }
-            if ((_state == OPERATIONAL) && _pid_state)
+            //TODO: setup sequence
+            if ((_state == OPERATIONAL) && _regulator_output_enabled)
             {
                 FOR(ROSBOT_DRIVE_TYPE)
                 {
@@ -377,11 +212,11 @@ void RosbotDrive::updateTargetSpeed(const NewTargetSpeed_t * new_speed)
     switch(new_speed->mode)
     {
         case DUTY_CYCLE:
-            if(!_pid_state)
+            if(!_regulator_output_enabled)
                 FOR(ROSBOT_DRIVE_TYPE) {_mot[i]->setPower(new_speed->speed[i]);}
             break;
         case MPS:
-            if(_pid_state)
+            if(_regulator_output_enabled)
                 FOR(ROSBOT_DRIVE_TYPE) {_tspeed_mps[i]=new_speed->speed[i];}
             break;
         default:
@@ -409,15 +244,15 @@ float RosbotDrive::getSpeed(RosbotMotNum mot_num)
     return _cspeed_mps[mot_num];
 }
 
-void RosbotDrive::updateWheelParams(const RosbotWheel_t * params)
+void RosbotDrive::updateWheelCoefficients(const RosbotWheel & params)
 {
-    _wheel_coefficient1 =  2 * M_PI * params->radius / (params->gear_ratio * params->encoder_cpr * params->tyre_deflection);
-    _wheel_coefficient2 =  2 * M_PI / (params->gear_ratio * params->encoder_cpr);
+    _wheel_coefficient1 =  2 * M_PI * params.radius / (params.gear_ratio * params.encoder_cpr * params.tyre_deflection);
+    _wheel_coefficient2 =  2 * M_PI / (params.gear_ratio * params.encoder_cpr);
 }
 
-void RosbotDrive::updatePidParams(const RosbotDrivePid_t * params, bool reset)
+void RosbotDrive::updatePidParams(const RosbotRegulator_params_t * params, bool reset)
 {
-    _regulator_state = false;
+    _regulator_loop_enabled = false;
     _pid_params = *params;
     FOR(ROSBOT_DRIVE_TYPE)
     {
@@ -427,7 +262,7 @@ void RosbotDrive::updatePidParams(const RosbotDrivePid_t * params, bool reset)
         arm_pid_init_f32(_pid_instance[i],reset);
     }
     _pid_interval_s = params->dt_ms/1000.0f;
-    _regulator_state = true;
+    _regulator_loop_enabled = true;
 }
 
 void RosbotDrive::stop()
@@ -456,12 +291,12 @@ void RosbotDrive::stop()
 
 void RosbotDrive::enablePidReg(bool en)
 {
-    _pid_state = en;
+    _regulator_output_enabled = en;
 }
 
 bool RosbotDrive::isPidEnabled() 
 {
-    return _pid_state;
+    return _regulator_output_enabled;
 }
 
 void RosbotDrive::getPidDebugData(PidDebugData_t * data, RosbotMotNum mot_num)
@@ -491,7 +326,7 @@ float RosbotDrive::getSpeed(RosbotMotNum mot_num, SpeedMode mode)
 
 void RosbotDrive::resetDistance()
 {
-    _regulator_state = false;
+    _regulator_loop_enabled = false;
     FOR(ROSBOT_DRIVE_TYPE)
     {
         _mot[i]->setPower(0);
@@ -501,5 +336,5 @@ void RosbotDrive::resetDistance()
         _cspeed_mps[i]=0;
         _cdistance[i]=0;
     }
-    _regulator_state = true;
+    _regulator_loop_enabled = true;
 }

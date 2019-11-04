@@ -32,14 +32,13 @@
             "rosserial-mbed.out_buffer_size": 768,
             "rosserial-mbed.in_buffer_size": 768,
             "rosbot-drive.set-num-wheels": 4,
-            "drv88xx-driver-mbed.use-stm-drv8848-driver":1,
             "mpu9250-lib.i2c-sda": "SENS2_PIN4",
             "mpu9250-lib.i2c-scl": "SENS2_PIN3",
             "mpu9250-lib.i2c-frequency": 100000,
             "mpu9250-lib.non-blocking":1,
             "enable-ws2812b-signalization": 0,
             "target.OUTPUT_EXT": "bin",
-            "target.has_remove": ["RTC","LPTICKER"]
+            "target.has_remove": ["RTC","LPTICKER", "FLASH"]
         }
     }
 }
