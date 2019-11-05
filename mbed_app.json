@@ -36,8 +36,8 @@
             "mpu9250-lib.i2c-frequency": 100000,
             "mpu9250-lib.non-blocking":1,
             "enable-ws2812b-signalization": 0,
-            "target.OUTPUT_EXT": "hex",
-            "target.has_remove": ["RTC","LPTICKER", "FLASH"]
+            "target.OUTPUT_EXT": "bin",
+            "target.has_remove": ["RTC","LPTICKER"]
         }
     }
 }

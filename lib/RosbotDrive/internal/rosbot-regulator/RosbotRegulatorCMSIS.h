@@ -92,6 +92,8 @@ void arm_pid_reset_f32(
 }
 /***************************CMSIS-DSP-PID***************************/
 
+#define MAX_ACCELERATION 2e-4
+
 class RosbotRegulatorCMSIS : public RosbotRegulator
 {
 public:
@@ -102,7 +104,13 @@ public:
         _state.Kp = _params.kp;
         _state.Ki = _params.ki;
         _state.Kd = _params.kd;
-        _speed_step = _params.speed_max * 1000.0f / _params.dt_ms;
+        MBED_ASSERT(_params.a_max <= MAX_ACCELERATION);
+        if(_params.a_max > MAX_ACCELERATION)
+        {
+            _speed_step = MAX_ACCELERATION * 1000.0f / _params.dt_ms;
+        }
+        else
+            _speed_step = _params.a_max * 1000.0f / _params.dt_ms;
         arm_pid_init_f32(&_state,1);
     }
 
@@ -114,7 +122,14 @@ public:
         _state.Kp = _params.kp;
         _state.Ki = _params.ki;
         _state.Kd = _params.kd;
-        _speed_step = _params.speed_max * 1000.0f / _params.dt_ms;
+        MBED_ASSERT(_params.a_max <= MAX_ACCELERATION);
+        if(_params.a_max > MAX_ACCELERATION)
+        {
+            _speed_step = MAX_ACCELERATION * 1000.0f / _params.dt_ms;
+        }
+        else
+            _speed_step = _params.a_max * 1000.0f / _params.dt_ms;
+        _speed_step = _params.a_max * 1000.0f / _params.dt_ms;
         _vsetpoint = 0;
         arm_pid_init_f32(&_state,1);
     }
@@ -136,6 +151,7 @@ public:
             _vsetpoint = 0;
         else
             _vsetpoint = csetpoint;
+        
 
         _error = _vsetpoint - feedback;
         
