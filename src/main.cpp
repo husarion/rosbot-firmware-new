@@ -1,8 +1,6 @@
 /** @file main.cpp
- * ROSbot firmware - 22th of October 2019 
+ * ROSbot firmware - 5th of November 2019 
  */
-#include <mbed.h>
-#include <RosbotDrive.h>
 #include <rosbot_kinematics.h>
 #include <rosbot_sensors.h>
 #include <ros.h>
@@ -55,8 +53,7 @@ ros::Publisher *imu_pub;
 geometry_msgs::TransformStamped robot_tf;
 tf::TransformBroadcaster broadcaster;
 
-rosbot_kinematics::RosbotOdometry_t odometry;
-RosbotDrive * driver;
+rosbot_kinematics::RosbotOdometry odometry;
 MultiDistanceSensor * distance_sensors;
 
 volatile bool distance_sensors_enabled = false;
@@ -195,7 +192,8 @@ static void initJointStatePublisher()
 
 static void velocityCallback(const geometry_msgs::Twist &twist_msg)
 {
-    rosbot_kinematics::setRosbotSpeed(driver,twist_msg.linear.x, twist_msg.angular.z);
+    RosbotDrive & drive = RosbotDrive::getInstance();
+    rosbot_kinematics::setRosbotSpeed(drive,twist_msg.linear.x, twist_msg.angular.z);
     last_speed_command_time = odom_watchdog_timer.read_ms();
     is_speed_watchdog_active = false;
 }
@@ -332,22 +330,15 @@ uint8_t ConfigFunctionality::setMotorsAccelDeaccel(const char *datain, const cha
 {
     float accel, deaccel;
     *dataout = NULL;
-    //TODO: range
-    if(sscanf(datain,"%f %f",&accel, deaccel) == 2)
-    {
-        RosobtDrivePid new_pid_params = RosbotDrive::DEFAULT_REGULATOR_PARAMS;
-        new_pid_params.a_max = accel;
-        new_pid_params.da_max = deaccel;
-        driver->updatePidParams(&new_pid_params,true);
-        return rosbot_ekf::Configuration::Response::SUCCESS; 
-    }
+    //TODO 
     return rosbot_ekf::Configuration::Response::FAILURE;
 }
 
 uint8_t ConfigFunctionality::resetOdom(const char *datain, const char **dataout)
 {
     *dataout = NULL;
-    rosbot_kinematics::resetRosbotOdometry(driver,&odometry);
+    RosbotDrive & drive = RosbotDrive::getInstance();
+    rosbot_kinematics::resetRosbotOdometry(drive, odometry);
     return rosbot_ekf::Configuration::Response::SUCCESS;
 }
 
@@ -513,12 +504,13 @@ int main()
     sens_power = 1; // power on sensors' line
     odom_watchdog_timer.start();
 
-    driver = RosbotDrive::getInstance(&rosbot_kinematics::ROSBOT_PARAMS);
+    RosbotDrive & drive = RosbotDrive::getInstance();
     distance_sensors = MultiDistanceSensor::getInstance(&rosbot_sensors::SENSORS_PIN_DEF);
 
-    driver->init();
-    driver->enable(true);
-    driver->enablePidReg(true);
+    drive.setupMotorSequence(MOTOR_FR,MOTOR_FL,MOTOR_RR,MOTOR_RL);
+    drive.init(rosbot_kinematics::CUSTOM_WHEEL_PARAMS,RosbotDrive::DEFAULT_REGULATOR_PARAMS);
+    drive.enable(true);
+    drive.enablePidReg(true);
 
     button1.mode(PullUp);
     button2.mode(PullUp);
@@ -533,7 +525,7 @@ int main()
 
     string welcome_str = "ROSbot firmware "; welcome_str.append(ROSBOT_FW_VERSION);
 
-    if(distance_sensors->init(400000)==4)
+    if(distance_sensors->init(100000)==4)
     {
         distance_sensors_enabled = true;
         for(int i=0;i<4;i++)
@@ -586,7 +578,7 @@ int main()
         {
             if(!is_speed_watchdog_active && (odom_watchdog_timer.read_ms() - last_speed_command_time) > speed_watchdog_interval)
             {
-                rosbot_kinematics::setRosbotSpeed(driver, 0.0f, 0.0f);
+                rosbot_kinematics::setRosbotSpeed(drive, 0.0f, 0.0f);
                 is_speed_watchdog_active = true;
             }
         }
@@ -595,9 +587,12 @@ int main()
         if(!nh.connected()) anim_manager->enableInterface(false);
 #endif
 
-        curr_odom_calc_time = odom_watchdog_timer.read();
-        rosbot_kinematics::updateRosbotOdometry(driver,&odometry,curr_odom_calc_time-last_odom_calc_time);
-        last_odom_calc_time = curr_odom_calc_time;
+        if (spin_count % 2 == 0)
+        {
+            curr_odom_calc_time = odom_watchdog_timer.read();
+            rosbot_kinematics::updateRosbotOdometry(drive,odometry,curr_odom_calc_time-last_odom_calc_time);
+            last_odom_calc_time = curr_odom_calc_time;
+        }
 
         if(button1_publish_flag)
         {
@@ -619,13 +614,13 @@ int main()
             }
         }
 
-        if (spin_count % 5 == 0) /// cmd_vel, odometry, joint_states, tf messages
+        if (spin_count % 6 == 0) /// cmd_vel, odometry, joint_states, tf messages
         {
-            current_vel.linear.x = sqrt(odometry.robot_x_vel * odometry.robot_x_vel + odometry.robot_y_vel * odometry.robot_y_vel);
-            current_vel.angular.z = odometry.robot_angular_vel;
-            pose.pose.position.x = odometry.robot_x_pos;
-            pose.pose.position.y = odometry.robot_y_pos;
-            pose.pose.orientation = tf::createQuaternionFromYaw(odometry.robot_angular_pos);
+            current_vel.linear.x = sqrt(odometry.odom.robot_x_vel * odometry.odom.robot_x_vel + odometry.odom.robot_y_vel * odometry.odom.robot_y_vel);
+            current_vel.angular.z = odometry.odom.robot_angular_vel;
+            pose.pose.position.x = odometry.odom.robot_x_pos;
+            pose.pose.position.y = odometry.odom.robot_y_pos;
+            pose.pose.orientation = tf::createQuaternionFromYaw(odometry.odom.robot_angular_pos);
             
             pose.header.stamp = nh.now();
             if(nh.connected())  pose_pub->publish(&pose);
@@ -633,10 +628,10 @@ int main()
 
             if(joint_states_enabled)
             {
-                pos[0] = odometry.wheel_FL_ang_pos;
-                pos[1] = odometry.wheel_FR_ang_pos;
-                pos[2] = odometry.wheel_RL_ang_pos;
-                pos[3] = odometry.wheel_RR_ang_pos;
+                pos[0] = odometry.odom.wheel_FL_ang_pos;
+                pos[1] = odometry.odom.wheel_FR_ang_pos;
+                pos[2] = odometry.odom.wheel_RL_ang_pos;
+                pos[3] = odometry.odom.wheel_RR_ang_pos;
                 joint_states.position = pos;
                 joint_states.header.stamp = pose.header.stamp; 
                 if(nh.connected()) joint_state_pub->publish(&joint_states);

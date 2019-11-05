@@ -1,8 +1,5 @@
 /** @file RosbotDrive.h
- * Definitions of RosbotDrive class and helper structures.
- *
- * @date 4.11.2019.
- * @author byq77.
+ * Definitions of RosbotDrive class and accompany structures.
  */
 #ifndef __ROSBOT_DRIVE_H__
 #define __ROSBOT_DRIVE_H__
@@ -11,8 +8,6 @@
 #include "internal/drv88xx-driver-mbed/DRV8848_STM.h"
 #include "internal/encoder-mbed/Encoder.h"
 #include "internal/rosbot-regulator/RosbotRegulator.h"
-
-#define PWM_DEFAULT_FREQ_HZ 18000UL /**< Default frequency for motors' pwms.*/
 
 /**
  * @brief Rosbot Motor Internal Number.
@@ -68,12 +63,11 @@ struct PidDebugData
     float error;
 };
 
+//TODO: documentation
 /**
  * @brief Rosbot Drive Module.
  *
- * This class represents the ROSbot drive module, responsible for motors control, 
- * and odometry calculation. TODO: more description
- * @sa 
+ * This class represents the ROSbot drive module.
  */
 class RosbotDrive : NonCopyable<RosbotDrive>
 {
@@ -82,37 +76,39 @@ public:
 
     static const RosbotRegulator_params DEFAULT_REGULATOR_PARAMS; /**< Default ROSbot regulator parameters. */
     
-    static RosbotDrive & getInstance(); // done
+    static RosbotDrive & getInstance(); 
 
-    void init(const RosbotWheel & wheel_params, const RosbotRegulator_params & params);
+    void init(const RosbotWheel & wheel_params, const RosbotRegulator_params & params); 
     
-    void enablePidReg(bool en);
+    void enable(bool en=true); 
 
-    bool isPidEnabled();
+    void enablePidReg(bool en); 
 
-    void enable(bool en=true);
+    bool isPidEnabled();  
+
+    void stop(); 
+
+    void setupMotorSequence(RosbotMotNum first, RosbotMotNum second, RosbotMotNum third, RosbotMotNum fourth);
     
-    void stop();
-    
-    float getSpeed(RosbotMotNum mot_num);
+    float getSpeed(RosbotMotNum mot_num); 
 
-    float getSpeed(RosbotMotNum mot_num, SpeedMode mode);
+    float getSpeed(RosbotMotNum mot_num, SpeedMode mode); 
 
-    float getDistance(RosbotMotNum mot_num);
+    float getDistance(RosbotMotNum mot_num); 
 
-    float getAngularPos(RosbotMotNum mot_num);
+    float getAngularPos(RosbotMotNum mot_num); 
 
-    void resetDistance();
+    int32_t getEncoderTicks(RosbotMotNum mot_num); 
 
-    int32_t getEncoderTicks(RosbotMotNum mot_num);
+    void resetDistance(); 
 
-    void updateTargetSpeed(const NewTargetSpeed * new_speed);
+    void updateTargetSpeed(const NewTargetSpeed & new_speed); 
 
-    void updateWheelCoefficients(const RosbotWheel & params);
+    void updateWheelCoefficients(const RosbotWheel & params); 
 
-    void updatePidParams(const RosbotRegulator_params * params, bool reset);
+    // void updatePidParams(const RosbotRegulator_params * params, bool reset);
 
-    void getPidDebugData(PidDebugData * data, RosbotMotNum mot_num);
+    // void getPidDebugData(PidDebugData * data, RosbotMotNum mot_num);
     
 private:
     static RosbotDrive * _instance;
@@ -130,7 +126,9 @@ private:
     volatile float _tspeed_mps[4];
     volatile float _cspeed_mps[4];
     volatile int32_t _cdistance[4];
-    float _pid_interval_s; 
+    uint8_t _motor_sequence[4];
+
+    int _regulator_interval_ms; 
 
     float _wheel_coefficient1;
     float _wheel_coefficient2;

@@ -16,7 +16,7 @@
         "UPPER_RESISTOR=5.6e4",
         "LOWER_RESISTOR=1.0e4",
         "VIN_MEAS_CORRECTION=0.986",
-        "ROSBOT_FW_VERSION=\"0.8.0\""
+        "ROSBOT_FW_VERSION=\"0.9.0\""
     ],
     "target_overrides": {
         "CORE2": {
@@ -31,13 +31,12 @@
             "rosserial-mbed.baudrate": 500000,
             "rosserial-mbed.out_buffer_size": 768,
             "rosserial-mbed.in_buffer_size": 768,
-            "rosbot-drive.set-num-wheels": 4,
             "mpu9250-lib.i2c-sda": "SENS2_PIN4",
             "mpu9250-lib.i2c-scl": "SENS2_PIN3",
             "mpu9250-lib.i2c-frequency": 100000,
             "mpu9250-lib.non-blocking":1,
             "enable-ws2812b-signalization": 0,
-            "target.OUTPUT_EXT": "bin",
+            "target.OUTPUT_EXT": "hex",
             "target.has_remove": ["RTC","LPTICKER", "FLASH"]
         }
     }

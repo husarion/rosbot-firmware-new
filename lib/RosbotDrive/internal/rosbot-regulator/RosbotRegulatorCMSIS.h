@@ -1,3 +1,6 @@
+/** @file RosbotRegulatorCMSIS.h
+ * Implementation of RosbotRegulator.
+ */
 #ifndef __ROSBOT_REGULATOR_CMSIS_H__
 #define __ROSBOT_REGULATOR_CMSIS_H__
 
@@ -89,16 +92,17 @@ void arm_pid_reset_f32(
 }
 /***************************CMSIS-DSP-PID***************************/
 
-
 class RosbotRegulatorCMSIS : public RosbotRegulator
 {
 public:
     RosbotRegulatorCMSIS(const RosbotRegulator_params &params)
-    :RosbotRegulator(params),
+    :RosbotRegulator(params)
+    ,_vsetpoint(0)
     {
         _state.Kp = _params.kp;
         _state.Ki = _params.ki;
         _state.Kd = _params.kd;
+        _speed_step = _params.speed_max * 1000.0f / _params.dt_ms;
         arm_pid_init_f32(&_state,1);
     }
 
@@ -110,6 +114,8 @@ public:
         _state.Kp = _params.kp;
         _state.Ki = _params.ki;
         _state.Kd = _params.kd;
+        _speed_step = _params.speed_max * 1000.0f / _params.dt_ms;
+        _vsetpoint = 0;
         arm_pid_init_f32(&_state,1);
     }
 
@@ -120,7 +126,23 @@ public:
 
     float updateState(float setpoint, float feedback)
     {
+        // target speed limit and acceleration limit
+        float csetpoint = _vsetpoint + copysign(_speed_step, setpoint - _vsetpoint);
+        if (csetpoint > _params.speed_max)
+            _vsetpoint = _params.speed_max;
+        else if (csetpoint < -_params.speed_max)
+            _vsetpoint = -_params.speed_max;
+        else if (fabs(csetpoint) <= _speed_step && setpoint == 0)
+            _vsetpoint = 0;
+        else
+            _vsetpoint = csetpoint;
+
+        _error = _vsetpoint - feedback;
         
+        _pidout =  arm_pid_f32(&_state, _error);
+
+        _pidout = (_pidout > _params.out_max ? _params.out_max : (_pidout < _params.out_min ? _params.out_min : _pidout));
+        return _pidout;
     }
 
     float getPidout()
@@ -135,16 +157,16 @@ public:
 
     void reset()
     {
-        _state.Kp = _params.kp;
-        _state.Ki = _params.ki;
-        _state.Kd = _params.kd;
-        arm_pid_init_f32(&_state,1);
+        arm_pid_reset_f32(&_state);
+        _vsetpoint = 0;
     }
 
 private:
     arm_pid_instance_f32 _state;
     float _error;
     float _pidout;
+    float _vsetpoint;
+    float _speed_step;
 };
 
 #endif /* __ROSBOT_REGULATOR_CMSIS_H__ */

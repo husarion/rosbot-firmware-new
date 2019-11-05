@@ -1,3 +1,6 @@
+/** @file RosbotRegulator.h
+ * Regulator abstract class.
+ */
 #ifndef __ROSBOT_REGULATOR_H__
 #define __ROSBOT_REGULATOR_H__
 
@@ -9,7 +12,6 @@ struct RosbotRegulator_params
     float out_min;
     float out_max;
     float a_max;
-    float da_max;
     float speed_max;
     unsigned int dt_ms;
 };
