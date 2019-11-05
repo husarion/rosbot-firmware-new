@@ -1,4 +1,4 @@
-#include <test/motor-test.h>
+#include <test/encoder-test.h>
 
 int main()
 {

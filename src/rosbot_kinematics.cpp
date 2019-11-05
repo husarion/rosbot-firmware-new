@@ -2,10 +2,10 @@
 
 namespace rosbot_kinematics {
 
-const RosbotWheel CUSTOM_WHEEL_PARAMS = {
+RosbotWheel custom_wheel_params = {
     .radius = WHEEL_RADIUS,
     .diameter_modificator = DIAMETER_MODIFICATOR,
-    .tyre_deflection = TYRE_DEFLATION,
+    .tyre_deflation = TYRE_DEFLATION,
     .gear_ratio = GEAR_RATIO,
     .encoder_cpr = ENCODER_CPR,
     .polarity = POLARITY
@@ -29,14 +29,14 @@ void updateRosbotOdometry(RosbotDrive & drive, RosbotOdometry & odom, float dtim
     iodom->wheel_FL_ang_pos = drive.getAngularPos(MOTOR_FL);
     iodom->wheel_RR_ang_pos = drive.getAngularPos(MOTOR_RR);
     iodom->wheel_RL_ang_pos = drive.getAngularPos(MOTOR_RL);
-    curr_wheel_R_ang_pos = (iodom->wheel_FR_ang_pos + iodom->wheel_RR_ang_pos)/(2*TYRE_DEFLATION);
-    curr_wheel_L_ang_pos = (iodom->wheel_FL_ang_pos + iodom->wheel_RL_ang_pos)/(2*TYRE_DEFLATION);
+    curr_wheel_R_ang_pos = (iodom->wheel_FR_ang_pos + iodom->wheel_RR_ang_pos)/(2*custom_wheel_params.tyre_deflation);
+    curr_wheel_L_ang_pos = (iodom->wheel_FL_ang_pos + iodom->wheel_RL_ang_pos)/(2*custom_wheel_params.tyre_deflation);
     iodom->wheel_L_ang_vel = (curr_wheel_L_ang_pos - iodom->wheel_L_ang_pos) / (dtime);
     iodom->wheel_R_ang_vel = (curr_wheel_R_ang_pos - iodom->wheel_R_ang_pos) / (dtime);
     iodom->wheel_L_ang_pos = curr_wheel_L_ang_pos;
     iodom->wheel_R_ang_pos = curr_wheel_R_ang_pos;
-    iodom->robot_angular_vel = (((iodom->wheel_R_ang_pos - iodom->wheel_L_ang_pos) * WHEEL_RADIUS / (ROBOT_WIDTH * DIAMETER_MODIFICATOR)) - iodom->robot_angular_pos) / dtime;
-    iodom->robot_angular_pos = (iodom->wheel_R_ang_pos - iodom->wheel_L_ang_pos) * WHEEL_RADIUS / (ROBOT_WIDTH * DIAMETER_MODIFICATOR);
+    iodom->robot_angular_vel = (((iodom->wheel_R_ang_pos - iodom->wheel_L_ang_pos) * WHEEL_RADIUS / (ROBOT_WIDTH * custom_wheel_params.diameter_modificator)) - iodom->robot_angular_pos) / dtime;
+    iodom->robot_angular_pos = (iodom->wheel_R_ang_pos - iodom->wheel_L_ang_pos) * WHEEL_RADIUS / (ROBOT_WIDTH * custom_wheel_params.diameter_modificator);
     iodom->robot_x_vel = (iodom->wheel_L_ang_vel * WHEEL_RADIUS + iodom->robot_angular_vel * ROBOT_WIDTH_HALF) * cos(iodom->robot_angular_pos);
     iodom->robot_y_vel = (iodom->wheel_L_ang_vel * WHEEL_RADIUS + iodom->robot_angular_vel * ROBOT_WIDTH_HALF) * sin(iodom->robot_angular_pos);
     iodom->robot_x_pos = iodom->robot_x_pos + iodom->robot_x_vel * dtime;

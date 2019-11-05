@@ -1,5 +1,5 @@
 /** @file main.cpp
- * ROSbot firmware - 5th of November 2019 
+ * ROSbot firmware - 6th of November 2019 
  */
 #include <rosbot_kinematics.h>
 #include <rosbot_sensors.h>
@@ -87,7 +87,7 @@ static void button2Callback()
 }
 
 // JointState
-char * joint_state_name[] = {"front_left_wheel_hinge", "front_right_wheel_hinge", "rear_left_wheel_hinge", "rear_right_wheel_hinge"};
+const char * joint_state_name[] = {"front_left_wheel_hinge", "front_right_wheel_hinge", "rear_left_wheel_hinge", "rear_right_wheel_hinge"};
 double pos[] = {0, 0, 0, 0};
 double vel[] = {0, 0, 0, 0};
 double eff[] = {0, 0, 0, 0};
@@ -178,7 +178,7 @@ static void initJointStatePublisher()
     joint_states.header.frame_id = "base_link";
 
     //assigning the arrays to the message
-    joint_states.name = joint_state_name;
+    joint_states.name = (char**)joint_state_name;
     joint_states.position = pos;
     // joint_states.velocity = vel;
     // joint_states.effort = eff;
@@ -215,6 +215,7 @@ public:
     uint8_t setMotorsAccelDeaccel(const char *datain, const char **dataout);
     uint8_t setAnimation(const char *datain, const char **dataout);
     uint8_t enableTfMessages(const char *datain, const char **dataout);
+    uint8_t calibrateOdometry(const char *datain, const char **dataout);
 
 private:
     ConfigFunctionality();
@@ -230,6 +231,7 @@ private:
     static const char SMAD_COMMAND[];
     static const char SANI_COMMAND[];
     static const char ETFM_COMMAND[];
+    static const char CALI_COMMAND[];
     map<std::string, configuration_srv_fun_t> _commands;
 };
 
@@ -245,6 +247,7 @@ const char ConfigFunctionality::RIMU_COMMAND[]="RIMU";
 const char ConfigFunctionality::SMAD_COMMAND[]="SMAD";
 const char ConfigFunctionality::SANI_COMMAND[]="SANI";
 const char ConfigFunctionality::ETFM_COMMAND[]="ETFM";
+const char ConfigFunctionality::CALI_COMMAND[]="CALI";
 
 ConfigFunctionality::ConfigFunctionality()
 {
@@ -257,6 +260,7 @@ ConfigFunctionality::ConfigFunctionality()
     _commands[RIMU_COMMAND] = &ConfigFunctionality::resetImu;
     _commands[SANI_COMMAND] = &ConfigFunctionality::setAnimation;
     _commands[ETFM_COMMAND] = &ConfigFunctionality::enableTfMessages;
+    _commands[CALI_COMMAND] = &ConfigFunctionality::calibrateOdometry;
 }
 
 uint8_t ConfigFunctionality::enableTfMessages(const char *datain, const char **dataout)
@@ -274,6 +278,22 @@ uint8_t ConfigFunctionality::enableTfMessages(const char *datain, const char **d
     }
     return rosbot_ekf::Configuration::Response::FAILURE;
 }
+
+uint8_t ConfigFunctionality::calibrateOdometry(const char *datain, const char **dataout)
+{
+    *dataout = NULL;
+    float diameter_modificator, tyre_deflation;
+    if(sscanf(datain,"%f %f", &diameter_modificator, &tyre_deflation) == 2)
+    {
+        rosbot_kinematics::custom_wheel_params.diameter_modificator = diameter_modificator;
+        rosbot_kinematics::custom_wheel_params.tyre_deflation = tyre_deflation;
+        RosbotDrive & drive = RosbotDrive::getInstance();
+        drive.updateWheelCoefficients(rosbot_kinematics::custom_wheel_params);
+        return rosbot_ekf::Configuration::Response::SUCCESS; 
+    }
+    return rosbot_ekf::Configuration::Response::FAILURE;
+}
+
 
 //TODO change the implementation
 uint8_t ConfigFunctionality::setAnimation(const char *datain, const char **dataout)
@@ -508,7 +528,7 @@ int main()
     distance_sensors = MultiDistanceSensor::getInstance(&rosbot_sensors::SENSORS_PIN_DEF);
 
     drive.setupMotorSequence(MOTOR_FR,MOTOR_FL,MOTOR_RR,MOTOR_RL);
-    drive.init(rosbot_kinematics::CUSTOM_WHEEL_PARAMS,RosbotDrive::DEFAULT_REGULATOR_PARAMS);
+    drive.init(rosbot_kinematics::custom_wheel_params,RosbotDrive::DEFAULT_REGULATOR_PARAMS);
     drive.enable(true);
     drive.enablePidReg(true);
 

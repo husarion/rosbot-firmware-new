@@ -116,7 +116,7 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
 ### Fixed
   - mpu9250 related bugs
 
-## [0.9.0] - 2019-11-05
+## [0.9.0] - 2019-11-06
 
 ### Changed
   - Improved RosbotDrive module implementation
@@ -128,6 +128,7 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
 
 ### Added
   - Regulator now implements soft start and soft stop.
+  - `CALI` command for wheel odometry calibration.s
 
 ## TODO
   - better forward regulator controlling acceleration

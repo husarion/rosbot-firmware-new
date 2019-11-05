@@ -333,7 +333,17 @@ At the moment following commands are available:
     ```bash
     $ rosservice call /config "command: `RODOM`
     >data: ''"
+    
+* `CALI` - ODOMETRY CALIBRATION (update coefficients)
+
+    To update `diameter_modificator` and `tyre_deflation` run:
+    ```bash
+    $ rosservice call /config "command: `CALI`
+    >data: 'X Y'"
     ```
+    * `X` - `diameter_modificator` value
+    * `Y` - `tyre_deflation` value
+
 * `SANI` - SET WS2812B LEDS ANIMATION
 
     To enable the ws2812b interface open the `mbed_app.json` file and change the line:

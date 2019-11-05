@@ -43,7 +43,7 @@ struct RosbotWheel
 {
     float radius;
     float diameter_modificator;
-    float tyre_deflection;
+    float tyre_deflation;
     float gear_ratio;
     uint32_t encoder_cpr; // conuts per revolution
     uint8_t polarity; // LSB -> motor, MSB -> encoder

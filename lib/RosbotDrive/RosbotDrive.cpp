@@ -27,7 +27,7 @@ static const DRV8848_Params_t DEFAULT_MDRV2_PARAMS{
 const RosbotWheel RosbotDrive::DEFAULT_WHEEL_PARAMS = {
     .radius = 0.0425,
     .diameter_modificator = 1.0f,
-    .tyre_deflection = 1.0f,
+    .tyre_deflation = 1.0f,
     .gear_ratio = 34.014,
     .encoder_cpr = 48,
     .polarity = 0b00111100};
@@ -101,7 +101,7 @@ void RosbotDrive::init(const RosbotWheel & wheel_params, const RosbotRegulator_p
 
     _regulator_interval_ms = reg_params.dt_ms;
 
-    _wheel_coefficient1 =  2 * M_PI * wheel_params.radius / (wheel_params.gear_ratio * wheel_params.encoder_cpr * wheel_params.tyre_deflection);
+    _wheel_coefficient1 =  2 * M_PI * wheel_params.radius / (wheel_params.gear_ratio * wheel_params.encoder_cpr * wheel_params.tyre_deflation);
     _wheel_coefficient2 =  2 * M_PI / (wheel_params.gear_ratio * wheel_params.encoder_cpr);
 
     FOR(4)
@@ -231,8 +231,10 @@ float RosbotDrive::getSpeed(RosbotMotNum mot_num)
 
 void RosbotDrive::updateWheelCoefficients(const RosbotWheel & params)
 {
-    _wheel_coefficient1 =  2 * M_PI * params.radius / (params.gear_ratio * params.encoder_cpr * params.tyre_deflection);
+    _regulator_loop_enabled = false;
+    _wheel_coefficient1 =  2 * M_PI * params.radius / (params.gear_ratio * params.encoder_cpr * params.tyre_deflation);
     _wheel_coefficient2 =  2 * M_PI / (params.gear_ratio * params.encoder_cpr);
+    _regulator_loop_enabled = true;
 }
 
 // void RosbotDrive::updatePidParams(const RosbotRegulator_params_t * params, bool reset)
@@ -307,6 +309,7 @@ float RosbotDrive::getSpeed(RosbotMotNum mot_num, SpeedMode mode)
 
 void RosbotDrive::resetDistance()
 {
+    bool tmp = _regulator_output_enabled;
     _regulator_loop_enabled = false;
     FOR(4) _mot[i]->setPower(0);
     FOR(4)
@@ -317,15 +320,16 @@ void RosbotDrive::resetDistance()
         _cspeed_mps[i]=0;
         _cdistance[i]=0;
     }
-    _regulator_loop_enabled = true;
+    _regulator_loop_enabled = tmp;
 }
 
 void RosbotDrive::setupMotorSequence(RosbotMotNum first, RosbotMotNum second, RosbotMotNum third, RosbotMotNum fourth)
 {
+    bool tmp = _regulator_output_enabled;
     _regulator_output_enabled = false;
     _motor_sequence[0] = first;
     _motor_sequence[1] = second;
     _motor_sequence[2] = third;
     _motor_sequence[3] = fourth;
-    _regulator_output_enabled = true;
+    _regulator_output_enabled = tmp;
 }

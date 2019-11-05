@@ -141,6 +141,14 @@ public:
 
     float updateState(float setpoint, float feedback)
     {
+        
+        if (fabs(feedback) <= _speed_step && setpoint == 0)
+        {
+            arm_pid_reset_f32(&_state);
+            _vsetpoint = 0;
+            return 0.0f;
+        }
+
         // target speed limit and acceleration limit
         float csetpoint = _vsetpoint + copysign(_speed_step, setpoint - _vsetpoint);
         if (csetpoint > _params.speed_max)
