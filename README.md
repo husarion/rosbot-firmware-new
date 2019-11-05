@@ -2,13 +2,13 @@
 The ROSbot mobile platform's microcontroller firmware. Written in C++ using [arm's Mbed OS framework](https://os.mbed.com/) ( `mbed-os-5.14.1`).
 
 ```
-        _____     _____     _____ 
-       |  _  |   |  _  |   |  _  |
-__   __| |/' |    \ V /    | |/' |
-\ \ / /|  /| |    / _ \    |  /| |
- \ V / \ |_/ / _ | |_| | _ \ |_/ /
-  \_/   \___/ (_)\_____/(_) \___/ 
-                                  
+        _____    _____   _____ 
+       |  _  |  |  _  | |  _  |
+__   __| |/' |  | |_| | | |/' |
+\ \ / /|  /| |  \____ | |  /| |
+ \ V / \ |_/ /_ .___/ /_\ |_/ /
+  \_/   \___/(_)\____/(_)\___/ 
+                               
 ```                                                    
 
 
@@ -87,7 +87,6 @@ In `mbed-os` directory create `.mbedignore` (filename starts with dot) file with
 features/cellular/*
 features/cryptocell/*
 features/deprecated_warnings/*
-features/device_key/*
 features/lorawan/*
 features/lwipstack/*
 features/nanostack/*

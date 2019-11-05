@@ -116,6 +116,23 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
 ### Fixed
   - mpu9250 related bugs
 
+## [0.9.0] - 2019-11-05
+
+### Changed
+  - Improved RosbotDrive module implementation
+    * removed most of the unused and trash code,
+    * regulator implementation moved to separate class that implements `RosbotRegulator` interface,
+    * class api uses references instead pointers,
+    * added motor output setup sequence
+  - other small code and configuration improvements
+
+### Added
+  - Regulator now implements soft start and soft stop.
+
 ## TODO
-  - forward regulator controlling acceleration and deacceleration
+  - better forward regulator controlling acceleration
+  - documentation
+  - modular kinematics implementation (class)
+  - better VL53L0X interface
   - virtual bumper using VL53L0X proximity sensors
+  - support for Sharp sensors
