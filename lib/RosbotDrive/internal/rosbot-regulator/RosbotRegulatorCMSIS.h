@@ -99,7 +99,10 @@ class RosbotRegulatorCMSIS : public RosbotRegulator
 public:
     RosbotRegulatorCMSIS(const RosbotRegulator_params &params)
     :RosbotRegulator(params)
-    ,_vsetpoint(0)
+    , _error(0.0f)
+    , _pidout(0.0f)
+    , _vsetpoint(0.0f)
+    , _speed_step(0.0f)
     {
         _state.Kp = _params.kp;
         _state.Ki = _params.ki;
@@ -145,7 +148,8 @@ public:
         if (fabs(feedback) <= _speed_step && setpoint == 0)
         {
             arm_pid_reset_f32(&_state);
-            _vsetpoint = 0;
+            _pidout =_vsetpoint = 0;
+            _error = setpoint - feedback;
             return 0.0f;
         }
 

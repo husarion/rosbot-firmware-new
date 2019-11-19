@@ -16,7 +16,7 @@
         "UPPER_RESISTOR=5.6e4",
         "LOWER_RESISTOR=1.0e4",
         "VIN_MEAS_CORRECTION=0.986",
-        "ROSBOT_FW_VERSION=\"0.9.0\""
+        "ROSBOT_FW_VERSION=\"0.9.1\""
     ],
     "target_overrides": {
         "CORE2": {

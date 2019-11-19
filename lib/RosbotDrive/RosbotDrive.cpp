@@ -211,17 +211,17 @@ void RosbotDrive::updateTargetSpeed(const NewTargetSpeed & new_speed)
 
 float RosbotDrive::getDistance(RosbotMotNum mot_num)
 {
-    return (float)_wheel_coefficient1 * _cdistance[mot_num];
+    return (float)_wheel_coefficient1 * _encoder[mot_num]->getCount();
 }
 
 float RosbotDrive::getAngularPos(RosbotMotNum mot_num)
 {
-    return (float)_wheel_coefficient2 * _cdistance[mot_num];
+    return (float)_wheel_coefficient2 * _encoder[mot_num]->getCount();
 }
 
 int32_t RosbotDrive::getEncoderTicks(RosbotMotNum mot_num)
 {
-    return _cdistance[mot_num];
+    return _encoder[mot_num]->getCount();
 }
 
 float RosbotDrive::getSpeed(RosbotMotNum mot_num)

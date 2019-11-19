@@ -130,6 +130,11 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
   - Regulator now implements soft start and soft stop.
   - `CALI` command for wheel odometry calibration.s
 
+## [0.9.1] - 2019-11-19
+
+### Changed
+- Use direct access to encoder ticks count in `getDistance`, `getAngularPos` and `getEncoderTicks`.
+
 ## TODO
   - better forward regulator controlling acceleration
   - documentation

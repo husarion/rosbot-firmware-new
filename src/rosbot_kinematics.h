@@ -7,6 +7,7 @@
 #define DIAMETER_MODIFICATOR 1.106 // 1.24, 1.09, 1.164
 #define TYRE_DEFLATION 1.042      // theoretical distance / real distance
 #define GEAR_RATIO 34.014
+// #define GEAR_RATIO 20.4        // red wheels
 #define ENCODER_CPR 48
 #define ROBOT_WIDTH_HALF ROBOT_WIDTH/2.0
 #define WHEEL_DIAMETER 0.085
