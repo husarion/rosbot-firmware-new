@@ -133,11 +133,14 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
 ## [0.9.1] - 2019-11-19
 
 ### Changed
-- Use direct access to encoder ticks count in `getDistance`, `getAngularPos` and `getEncoderTicks`.
+  - Use direct access to encoder ticks count in `getDistance`, `getAngularPos` and `getEncoderTicks`.
+
+### Fixed
+  - Bug in `getPidout` (`RosbotRegulatorCmsis.h`).
 
 ## TODO
-  - better forward regulator controlling acceleration
   - documentation
+  - better forward regulator controlling acceleration
   - modular kinematics implementation (class)
   - better VL53L0X interface
   - virtual bumper using VL53L0X proximity sensors

@@ -1,5 +1,9 @@
 /** @file main.cpp
- * ROSbot firmware - 6th of November 2019 
+ * ROSbot firmware.
+ * 
+ * @date 11-21-2019
+ * @version 0.9.1
+ * @copyright GNU GPL-3.0
  */
 #include <rosbot_kinematics.h>
 #include <rosbot_sensors.h>

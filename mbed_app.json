@@ -28,7 +28,7 @@
             "platform.stdio-baud-rate": 230400,
             "rosserial-mbed.tx_pin": "RPI_SERIAL_TX",
             "rosserial-mbed.rx_pin": "RPI_SERIAL_RX",
-            "rosserial-mbed.baudrate": 500000,
+            "rosserial-mbed.baudrate": 460800,
             "rosserial-mbed.out_buffer_size": 768,
             "rosserial-mbed.in_buffer_size": 768,
             "mpu9250-lib.i2c-sda": "SENS2_PIN4",
