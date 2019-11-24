@@ -88,7 +88,7 @@
                     "\"after_programming\"",
                     "-Rst"
                 ]
-            },
+            }
         },
         {
             "label": "FLASH FIRMWARE (DEBUG)",
@@ -104,11 +104,11 @@
                     "\"after_programming\"",
                     "-Rst"
                 ]
-            },
+            }
         },
         {
-            "label":"CREATE STATIC MBED-OS LIB (RELEASE)",
-            "type":"shell",
+            "label": "CREATE STATIC MBED-OS LIB (RELEASE)",
+            "type": "shell",
             "command": "mbed",
             "args": [
                 "compile",
@@ -125,8 +125,8 @@
             ]
         },
         {
-            "label":"CREATE STATIC MBED-OS LIB (DEBUG)",
-            "type":"shell",
+            "label": "CREATE STATIC MBED-OS LIB (DEBUG)",
+            "type": "shell",
             "command": "mbed",
             "args": [
                 "compile",

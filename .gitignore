@@ -8,4 +8,4 @@ mbed_settings.pyc
 .vscode/ipch
 core2-flasher
 .vscode/.cortex*
-TODO
+create_firmware_files.py

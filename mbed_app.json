@@ -1,7 +1,6 @@
 {
     "config": {
-        "enable-ws2812b-signalization":
-        {
+        "enable-ws2812b-signalization": {
             "help": "Enable ws2812b signalization",
             "macro_name": "USE_WS2812B_ANIMATION_MANAGER",
             "value": 0,
@@ -16,7 +15,8 @@
         "UPPER_RESISTOR=5.6e4",
         "LOWER_RESISTOR=1.0e4",
         "VIN_MEAS_CORRECTION=0.986",
-        "ROSBOT_FW_VERSION=\"0.9.1\""
+        "ROSBOT_FW_VERSION=\"0.9.1\"",
+        "WELLCOME_BANNER"
     ],
     "target_overrides": {
         "CORE2": {
@@ -34,10 +34,13 @@
             "mpu9250-lib.i2c-sda": "SENS2_PIN4",
             "mpu9250-lib.i2c-scl": "SENS2_PIN3",
             "mpu9250-lib.i2c-frequency": 100000,
-            "mpu9250-lib.non-blocking":1,
+            "mpu9250-lib.non-blocking": 1,
             "enable-ws2812b-signalization": 0,
             "target.OUTPUT_EXT": "bin",
-            "target.has_remove": ["RTC","LPTICKER"]
+            "target.has_remove": [
+                "RTC",
+                "LPTICKER"
+            ]
         }
     }
 }

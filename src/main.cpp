@@ -22,6 +22,19 @@
 #include <map>
 #include <string>
 
+static const char WELLCOME_STR[] = "\n\n"
+#if defined(WELLCOME_BANNER)
+" ______  _____  _____  _             _           __\n"
+" | ___ \\|  _  |/  ___|| |           | |         / _|\n"
+" | |_/ /| | | |\\ `--. | |__    ___  | |_       | |_ __      __\n"
+" |    / | | | | `--. \\| '_ \\  / _ \\ | __|      |  _|\\ \\ /\\ / /\n"
+" | |\\ \\ \\ \\_/ //\\__/ /| |_) || (_) || |_       | |   \\ V  V / \n"
+" \\_| \\_| \\___/ \\____/ |_.__/  \\___/  \\__|      |_|    \\_/\\_/ \n\n"
+#endif
+" Firmware version: "
+ROSBOT_FW_VERSION
+"\n\n";
+
 #if USE_WS2812B_ANIMATION_MANAGER
     #include <AnimationManager.h>
     AnimationManager * anim_manager;
@@ -547,8 +560,6 @@ int main()
     uint8_t imu_init_flag = 0;
     bool welcome_flag = true;
 
-    string welcome_str = "ROSbot firmware "; welcome_str.append(ROSBOT_FW_VERSION);
-
     if(distance_sensors->init(100000)==4)
     {
         distance_sensors_enabled = true;
@@ -719,17 +730,14 @@ int main()
             if(welcome_flag)
             {
                 welcome_flag = false;
-                nh.loginfo(welcome_str.c_str());
+                nh.loginfo(WELLCOME_STR);
             }
             if(distance_sensors_init_flag)
             {
-                distance_sensors_init_flag--;
                 nh.logerror("VL53L0X sensors initialisation failure!");
-
             }
             if(imu_init_flag)
             {
-                imu_init_flag--;
                 nh.logerror("MPU9250 initialisation failure!");
             }
         }
