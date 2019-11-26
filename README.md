@@ -112,7 +112,7 @@ Open `rosbot-firmware-new` in Visual Studio Code IDE. In `.vscode` directory fin
 Example (Windows):
 ```json
 {
-    "C_Cpp.default.compilerPath": "C:/Program Files (x86)/GNU Tools ARM Embedded/6 2017-q2-update/bin/arm-none-eabi-g++"
+    "C_Cpp.default.compilerPath": "C:\\Program Files (x86)\\GNU Tools ARM Embedded\\6 2017-q2-update\\bin\\arm-none-eabi-g++"
 }
 ```
 
