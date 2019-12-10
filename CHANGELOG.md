@@ -138,8 +138,14 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
 ### Fixed
   - Bug in `getPidout` (`RosbotRegulatorCmsis.h`).
 
+## [0.9.2] - 2019-12-10
+
+### Fixed
+  - USART6 pins configuration. 
+
 ## TODO
-  - documentation
+  - code documentation
+  - modular, oop implementation, 
   - better forward regulator controlling acceleration
   - modular kinematics implementation (class)
   - better VL53L0X interface

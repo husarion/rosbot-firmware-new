@@ -372,14 +372,18 @@ typedef enum {
     SENS3_PIN1 = PC_4,
     SENS3_PIN1_ALT0 = PC_4_ALT0,
     SENS3_PIN2 = PG_2,
-    SENS3_PIN3 = PC_12,
-    SENS3_PIN4 = PD_2,
+    SENS3_PIN3 = PC_12, // UART_5_TX
+    SENS3_PIN3_UART_TX = PC_12, // UART_5_TX
+    SENS3_PIN4 = PD_2,  // UART_5_RX
+    SENS3_PIN4_UART_RX = PD_2,  // UART_5_RX
 
     SENS4_PIN1 = PC_5,
     SENS4_PIN1_ALT0 = PC_5_ALT0,
     SENS4_PIN2 = PD_15,
-    SENS4_PIN3 = PG_14,
-    SENS4_PIN4 = PG_9,
+    SENS4_PIN3 = PG_14, // USART_6_TX 
+    SENS4_PIN3_UART_TX = PG_14, // USART_6_TX 
+    SENS4_PIN4 = PG_9,  // USART_6_RX
+    SENS4_PIN4_UART_RX = PG_9,  // USART_6_RX
     
     SENS5_PIN1 = PB_0,
     SENS5_PIN1_ALT0 = PB_0_ALT0,
@@ -464,7 +468,6 @@ typedef enum {
     SERVO_SEL1 = PE_10,
     SERVO_SEL2 = PE_12,
     SERVO_POWER_ON = PE_15,
-    
 
     /**** BAT AND BOOT PINS****/
     BAT_MEAS = PA_5,            //  VIN SUPPLY MEASURMENT
