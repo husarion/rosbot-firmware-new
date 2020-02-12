@@ -9,7 +9,7 @@ ______  _____  _____  _             _           __
 | |\ \ \ \_/ //\__/ /| |_) || (_) || |_       | |   \ V  V / 
 \_| \_| \___/ \____/ |_.__/  \___/  \__|      |_|    \_/\_/  
 ```                                                    
-**Firmware version:** `0.9.2`
+**Firmware version:** `0.10.0`
 
 ## Prerequisites
 You need to install following tools:
@@ -315,7 +315,7 @@ At the moment following commands are available:
     >data: ''"
     ``` 
 
-* `EDSE` - ENABLE/DISABLE DISTANCE SENSORS:
+<!-- * `EDSE` - ENABLE/DISABLE DISTANCE SENSORS:
     
     To enable VL53LX0 distance sensors run:
     ```bash
@@ -323,7 +323,7 @@ At the moment following commands are available:
     >data: '1'" 
     ```
     * `data: '1'` - enable
-    * `data: '0'` - disable
+    * `data: '0'` - disable -->
     
 * `EJSM` -  ENABLE/DISABLE JOINT STATES MESSAGES
 
@@ -351,6 +351,16 @@ At the moment following commands are available:
     ```
     * `X` - `diameter_modificator` value
     * `Y` - `tyre_deflation` value
+
+* `EMOT` - ENABLE/DISABLE MOTORS
+
+    To disable motors run:
+    ```bash
+    $ rosservice call /config "command 'EMOT'
+    >data '0'
+    ```
+    * `0` - disconnect motors
+    * `1` - connect motors
 
 * `SANI` - SET WS2812B LEDS ANIMATION
 

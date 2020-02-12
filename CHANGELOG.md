@@ -143,11 +143,29 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
 ### Fixed
   - USART6 pins configuration. 
 
+## [0.10.0] - 2020-12-02
+
+### Changed
+  - Topic names changed from global to relative.
+  - New non-blocking implementation of VL53L0X library.
+  - Small changes in implementation of MPU9250 library.
+  - Improved accuracy of timestamps in ros messages.
+
+### Added
+  - `update_symbols.py` script for `c_cpp_properties.json` symbols update.
+
+### Fixed
+  - Fixed distance sensors behavior.
+  - Fixed sensors error messages
+
+### Added
+  - Automatic distance sensors reinitialization in case of sensor malfunction/i2c error.
+
 ## TODO
-  - code documentation
-  - modular, oop implementation, 
+  - better code documentation
+  - rosserial optimization 
+  - better modular, oop implementation,
+  - use of /diagnostics topic
   - better forward regulator controlling acceleration
   - modular kinematics implementation (class)
-  - better VL53L0X interface
-  - virtual bumper using VL53L0X proximity sensors
   - support for Sharp sensors
