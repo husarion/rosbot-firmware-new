@@ -57,20 +57,6 @@ float updateBatteryWatchdog()
 
 #pragma endregion BATTERY_REGION
 
-#pragma region DISTANCE_SENSOR_REGION
-
-const Sensors_pin_def_t SENSORS_PIN_DEF={
-    .sda_pin=SENSORS_SDA_PIN,
-    .scl_pin=SENSORS_SCL_PIN,
-    .xshout_sens_pin={
-        SENSOR_FR_XSHOUT_PIN,
-        SENSOR_FL_XSHOUT_PIN,
-        SENSOR_RR_XSHOUT_PIN,
-        SENSOR_RL_XSHOUT_PIN}
-};
-
-#pragma endregion DISTANCE_SENSOR_REGION
-
 #pragma region IMU_REGION //FIXME mutexes and other improvements
 
 volatile bool imu_state;
@@ -116,6 +102,7 @@ static void imuCallback()
                 new_msg->linear_velocity[0] = imu.calcAccel(imu.ax);
                 new_msg->linear_velocity[1] = imu.calcAccel(imu.ay);
                 new_msg->linear_velocity[2] = imu.calcAccel(imu.az);
+                new_msg->timestamp = imu.time;
                 imu_sensor_mail_box.put(new_msg);
             }
         }

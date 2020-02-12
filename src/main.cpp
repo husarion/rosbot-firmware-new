@@ -1,8 +1,8 @@
 /** @file main.cpp
  * ROSbot firmware.
  * 
- * @date 11-21-2019
- * @version 0.9.1
+ * @date 02-12-2020
+ * @version 0.10.0
  * @copyright GNU GPL-3.0
  */
 #include <rosbot_kinematics.h>
@@ -73,7 +73,6 @@ geometry_msgs::TransformStamped robot_tf;
 tf::TransformBroadcaster broadcaster;
 
 rosbot_kinematics::RosbotOdometry odometry;
-MultiDistanceSensor * distance_sensors;
 
 volatile bool distance_sensors_enabled = false;
 volatile bool joint_states_enabled = false;
@@ -427,29 +426,29 @@ uint8_t ConfigFunctionality::enableDistanceSensors(const char *datain, const cha
 {
     int en;
     *dataout = EMPTY_STING;
-    if(sscanf(datain,"%d",&en) == 1)
-    {
-        if(en == 0)
-        {
-            distance_sensors_enabled = false;
-            for(int i=0;i<4;i++)
-            {
-                VL53L0X * sensor = distance_sensors->getSensor(i);
-                sensor->stopContinuous();
-            }
-        }
-        else
-        {
-            distance_sensors_enabled = true;
-            for(int i=0;i<4;i++)
-            {
-                VL53L0X * sensor = distance_sensors->getSensor(i);
-                sensor->setTimeout(50); 
-                sensor->startContinuous();
-            }
-        }
-        return rosbot_ekf::Configuration::Response::SUCCESS; 
-    }
+    // if(sscanf(datain,"%d",&en) == 1)
+    // {
+    //     if(en == 0)
+    //     {
+    //         distance_sensors_enabled = false;
+    //         for(int i=0;i<4;i++)
+    //         {
+    //             VL53L0X * sensor = distance_sensors->getSensor(i);
+    //             sensor->stopContinuous();
+    //         }
+    //     }
+    //     else
+    //     {
+    //         distance_sensors_enabled = true;
+    //         for(int i=0;i<4;i++)
+    //         {
+    //             VL53L0X * sensor = distance_sensors->getSensor(i);
+    //             sensor->setTimeout(50); 
+    //             sensor->startContinuous();
+    //         }
+    //     }
+    //     return rosbot_ekf::Configuration::Response::SUCCESS; 
+    // }
     return rosbot_ekf::Configuration::Response::FAILURE;
 }
 
@@ -557,11 +556,11 @@ int print_debug_info()
 int main()
 {
     ThisThread::sleep_for(100);
-    sens_power = 1; // power on sensors' line
+    sens_power = 1; // sensors power on
     odom_watchdog_timer.start();
 
     RosbotDrive & drive = RosbotDrive::getInstance();
-    distance_sensors = MultiDistanceSensor::getInstance(&rosbot_sensors::SENSORS_PIN_DEF);
+    MultiDistanceSensor & distance_sensors = MultiDistanceSensor::getInstance();
 
     drive.setupMotorSequence(MOTOR_FR,MOTOR_FL,MOTOR_RR,MOTOR_RL);
     drive.init(rosbot_kinematics::custom_wheel_params,RosbotDrive::DEFAULT_REGULATOR_PARAMS);
@@ -579,17 +578,11 @@ int main()
     bool imu_init_flag = false;
     bool welcome_flag = true;
     
-    //TODO: error module
-    if(distance_sensors->init(100000)==4)
+    //TODO: add /diagnostic messages
+    if(distance_sensors.init())
     {
         distance_sensors_enabled = true;
         distance_sensors_init_flag = true;
-        for(int i=0;i<4;i++)
-        {
-            VL53L0X * sensor = distance_sensors->getSensor(i);
-            sensor->setTimeout(50); 
-            sensor->startContinuous();
-        }
     }
 
     if(rosbot_sensors::initImu()==INV_SUCCESS)
@@ -618,6 +611,7 @@ int main()
 #endif /* MEMORY_DEBUG_INFO */ 
 
     int spin_result;
+    int err_msg=0;
     uint32_t spin_count=1;
     float curr_odom_calc_time, last_odom_calc_time = 0.0f;
     
@@ -706,26 +700,58 @@ int main()
             if(nh.connected()) battery_pub->publish(&battery_state);
         }
 
-        if(spin_count % 20 == 0 && distance_sensors_enabled) // ~ 5 HZ
+        osEvent evt = distance_sensor_mail_box.get(0);
+        if(evt.status == osEventMail)
         {
-            uint16_t range;
-            ros::Time t = nh.now();
-            for(int i=0;i<4;i++)
+            SensorsMeasurement * message = (SensorsMeasurement*)evt.value.p;
+            if(message->status == MultiDistanceSensor::ERR_I2C_FAILURE)
             {
-                range = distance_sensors->getSensor(i)->readRangeContinuousMillimeters(false);
-                range_msg[i].header.stamp = t;
-                range_msg[i].range = (range != 65535) ? (float)range/1000.0f : -1.0f;
-                if(nh.connected()) range_pub[i]->publish(&range_msg[i]);
+                err_msg++;
+                if(distance_sensor_commands.empty() && err_msg == 3)
+                {
+                    if(nh.connected()) nh.logerror("I2C error. Restarting VL53L0X sensors...");
+                    uint8_t * data = distance_sensor_commands.alloc();
+                    *data = 2;
+                    distance_sensor_commands.put(data);
+                    data = distance_sensor_commands.alloc();
+                    *data = 1;
+                    distance_sensor_commands.put(data);
+                    err_msg = 0;
+                }
             }
+            else
+            {
+                err_msg = 0;
+                for(int i=0; i<4; i++)
+                {
+                    range_msg[i].header.stamp = nh.now(message->timestamp);
+                    range_msg[i].range = message->range[i];
+                    if(nh.connected()) range_pub[i]->publish(&range_msg[i]);
+                }
+            }
+            distance_sensor_mail_box.free(message);
         }
+        // }
+        // if(spin_count % 20 == 0 && distance_sensors_enabled) // ~ 5 HZ
+        // {
+        //     uint16_t range;
+        //     ros::Time t = nh.now();
+        //     for(int i=0;i<4;i++)
+        //     {
+        //         range = distance_sensors->getSensor(i)->readRangeContinuousMillimeters(false);
+        //         range_msg[i].header.stamp = t;
+        //         range_msg[i].range = (range != 65535) ? (float)range/1000.0f : -1.0f;
+        //         if(nh.connected()) range_pub[i]->publish(&range_msg[i]);
+        //     }
+        // }
         
-        osEvent evt = rosbot_sensors::imu_sensor_mail_box.get(0);
+        evt = rosbot_sensors::imu_sensor_mail_box.get(0);
 
         if(evt.status == osEventMail)
         {
             rosbot_sensors::imu_meas_t * message = (rosbot_sensors::imu_meas_t*)evt.value.p;
 
-            imu_msg.header.stamp = nh.now();
+            imu_msg.header.stamp = nh.now(message->timestamp);
             imu_msg.orientation.x = message->orientation[0];
             imu_msg.orientation.y = message->orientation[1];
             imu_msg.orientation.z = message->orientation[2];
