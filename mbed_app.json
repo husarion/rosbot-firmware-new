@@ -8,14 +8,7 @@
         }
     },
     "macros": [
-        "ENCODER_1=TIM2",
-        "ENCODER_2=TIM8",
-        "ENCODER_3=TIM3",
-        "ENCODER_4=TIM4",
-        "UPPER_RESISTOR=5.6e4",
-        "LOWER_RESISTOR=1.0e4",
-        "VIN_MEAS_CORRECTION=0.986",
-        "ROSBOT_FW_VERSION=\"0.9.2\"",
+        "ROSBOT_FW_VERSION=\"0.10.0\"",
         "WELLCOME_BANNER"
     ],
     "target_overrides": {
@@ -36,11 +29,7 @@
             "mpu9250-lib.i2c-frequency": 100000,
             "mpu9250-lib.non-blocking": 1,
             "enable-ws2812b-signalization": 0,
-            "target.OUTPUT_EXT": "bin",
-            "target.has_remove": [
-                "RTC",
-                "LPTICKER"
-            ]
+            "target.OUTPUT_EXT": "hex"
         }
     }
 }

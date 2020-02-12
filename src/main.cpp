@@ -22,6 +22,8 @@
 #include <map>
 #include <string>
 
+static const char EMPTY_STING[] = "";
+
 static const char WELLCOME_STR[] = "\n\n"
 #if defined(WELLCOME_BANNER)
 " ______  _____  _____  _             _           __\n"
@@ -111,17 +113,17 @@ double eff[] = {0, 0, 0, 0};
 
 // Range
 const char * range_id[] = {"range_fr","range_fl","range_rr","range_rl"};
-const char * range_pub_names[] = {"/range/fr","/range/fl","/range/rr","/range/rl"};
+const char * range_pub_names[] = {"range/fr","range/fl","range/rr","range/rl"};
 
 static void initImuPublisher()
 {
-    imu_pub = new ros::Publisher("/mpu9250", &imu_msg);
+    imu_pub = new ros::Publisher("mpu9250", &imu_msg);
     nh.advertise(*imu_pub);
 }
 
 static void initButtonPublisher()
 {
-    button_pub = new ros::Publisher("/buttons", &button_msg);
+    button_pub = new ros::Publisher("buttons", &button_msg);
     nh.advertise(*button_pub);
 }
 
@@ -143,7 +145,7 @@ static void initBatteryPublisher()
     battery_state.power_supply_status = battery_state.POWER_SUPPLY_STATUS_UNKNOWN;
     battery_state.power_supply_health = battery_state.POWER_SUPPLY_HEALTH_UNKNOWN;
     battery_state.power_supply_technology = battery_state.POWER_SUPPLY_TECHNOLOGY_LION;
-    battery_pub = new ros::Publisher("/battery", &battery_state);
+    battery_pub = new ros::Publisher("battery", &battery_state);
     nh.advertise(*battery_pub);
 }
 
@@ -157,7 +159,7 @@ static void initPosePublisher()
     pose.pose.orientation.y = 0;
     pose.pose.orientation.z = 0;
     pose.pose.orientation.w = 1;
-    pose_pub = new ros::Publisher("/pose", &pose);
+    pose_pub = new ros::Publisher("pose", &pose);
     nh.advertise(*pose_pub);
 }
 
@@ -183,13 +185,13 @@ static void initVelocityPublisher()
     current_vel.angular.x = 0;
     current_vel.angular.y = 0;
     current_vel.angular.z = 0;
-    vel_pub = new ros::Publisher("/velocity", &current_vel);
+    vel_pub = new ros::Publisher("velocity", &current_vel);
     nh.advertise(*vel_pub);
 }
 
 static void initJointStatePublisher()
 {
-    joint_state_pub = new ros::Publisher("/joint_states", &joint_states);
+    joint_state_pub = new ros::Publisher("joint_states", &joint_states);
     nh.advertise(*joint_state_pub);
 
     joint_states.header.frame_id = "base_link";
@@ -233,6 +235,8 @@ public:
     uint8_t setAnimation(const char *datain, const char **dataout);
     uint8_t enableTfMessages(const char *datain, const char **dataout);
     uint8_t calibrateOdometry(const char *datain, const char **dataout);
+    uint8_t enableMotors(const char *datain, const char **dataout);
+    
 
 private:
     ConfigFunctionality();
@@ -249,6 +253,7 @@ private:
     static const char SANI_COMMAND[];
     static const char ETFM_COMMAND[];
     static const char CALI_COMMAND[];
+    static const char EMOT_COMMAND[];
     map<std::string, configuration_srv_fun_t> _commands;
 };
 
@@ -265,6 +270,8 @@ const char ConfigFunctionality::SMAD_COMMAND[]="SMAD";
 const char ConfigFunctionality::SANI_COMMAND[]="SANI";
 const char ConfigFunctionality::ETFM_COMMAND[]="ETFM";
 const char ConfigFunctionality::CALI_COMMAND[]="CALI";
+const char ConfigFunctionality::EMOT_COMMAND[]="EMOT";
+
 
 ConfigFunctionality::ConfigFunctionality()
 {
@@ -278,12 +285,13 @@ ConfigFunctionality::ConfigFunctionality()
     _commands[SANI_COMMAND] = &ConfigFunctionality::setAnimation;
     _commands[ETFM_COMMAND] = &ConfigFunctionality::enableTfMessages;
     _commands[CALI_COMMAND] = &ConfigFunctionality::calibrateOdometry;
+    _commands[EMOT_COMMAND] = &ConfigFunctionality::enableMotors;
 }
 
 uint8_t ConfigFunctionality::enableTfMessages(const char *datain, const char **dataout)
 {
     int en;
-    *dataout = NULL;
+    *dataout = EMPTY_STING;
     if(sscanf(datain,"%d",&en) == 1)
     {
         tf_msgs_enabled = en ? true : false;
@@ -298,7 +306,7 @@ uint8_t ConfigFunctionality::enableTfMessages(const char *datain, const char **d
 
 uint8_t ConfigFunctionality::calibrateOdometry(const char *datain, const char **dataout)
 {
-    *dataout = NULL;
+    *dataout = EMPTY_STING;
     float diameter_modificator, tyre_deflation;
     if(sscanf(datain,"%f %f", &diameter_modificator, &tyre_deflation) == 2)
     {
@@ -311,11 +319,22 @@ uint8_t ConfigFunctionality::calibrateOdometry(const char *datain, const char **
     return rosbot_ekf::Configuration::Response::FAILURE;
 }
 
+uint8_t ConfigFunctionality::enableMotors(const char *datain, const char **dataout)
+{
+    *dataout = EMPTY_STING;
+    int en = atoi(datain);
+    if(en)
+        nh.loginfo("Motors connected.");
+    else
+        nh.loginfo("Motors disconnected.");
+    RosbotDrive::getInstance().enable(en);
+    return rosbot_ekf::Configuration::Response::SUCCESS;
+}
 
 //TODO change the implementation
 uint8_t ConfigFunctionality::setAnimation(const char *datain, const char **dataout)
 {
-    *dataout = NULL;
+    *dataout = EMPTY_STING;
 #if USE_WS2812B_ANIMATION_MANAGER
     Color_t color;
     switch(datain[0])
@@ -358,7 +377,7 @@ ConfigFunctionality::configuration_srv_fun_t ConfigFunctionality::findFunctional
 
 uint8_t ConfigFunctionality::resetImu(const char *datain, const char **dataout)
 {
-    *dataout = NULL;
+    *dataout = EMPTY_STING;
     rosbot_sensors::resetImu();
     return rosbot_ekf::Configuration::Response::SUCCESS;
 }
@@ -366,14 +385,14 @@ uint8_t ConfigFunctionality::resetImu(const char *datain, const char **dataout)
 uint8_t ConfigFunctionality::setMotorsAccelDeaccel(const char *datain, const char **dataout)
 {
     float accel, deaccel;
-    *dataout = NULL;
+    *dataout = EMPTY_STING;
     //TODO 
     return rosbot_ekf::Configuration::Response::FAILURE;
 }
 
 uint8_t ConfigFunctionality::resetOdom(const char *datain, const char **dataout)
 {
-    *dataout = NULL;
+    *dataout = EMPTY_STING;
     RosbotDrive & drive = RosbotDrive::getInstance();
     rosbot_kinematics::resetRosbotOdometry(drive, odometry);
     return rosbot_ekf::Configuration::Response::SUCCESS;
@@ -382,7 +401,7 @@ uint8_t ConfigFunctionality::resetOdom(const char *datain, const char **dataout)
 uint8_t ConfigFunctionality::enableImu(const char *datain, const char **dataout)
 {
     int en;
-    *dataout = NULL;
+    *dataout = EMPTY_STING;
     if(sscanf(datain,"%d",&en) == 1)
     {
         events::EventQueue * q = mbed_event_queue();
@@ -395,7 +414,7 @@ uint8_t ConfigFunctionality::enableImu(const char *datain, const char **dataout)
 uint8_t ConfigFunctionality::enableJointStates(const char *datain, const char **dataout)
 {
     int en;
-    *dataout = NULL;
+    *dataout = EMPTY_STING;
     if(sscanf(datain,"%d",&en) == 1)
     {
         joint_states_enabled = (en == 0 ? false : true);
@@ -407,7 +426,7 @@ uint8_t ConfigFunctionality::enableJointStates(const char *datain, const char **
 uint8_t ConfigFunctionality::enableDistanceSensors(const char *datain, const char **dataout)
 {
     int en;
-    *dataout = NULL;
+    *dataout = EMPTY_STING;
     if(sscanf(datain,"%d",&en) == 1)
     {
         if(en == 0)
@@ -437,7 +456,7 @@ uint8_t ConfigFunctionality::enableDistanceSensors(const char *datain, const cha
 uint8_t ConfigFunctionality::setLed(const char *datain, const char **dataout)
 {
     int led_num, led_state;
-    *dataout = NULL;
+    *dataout = EMPTY_STING;
     if(sscanf(datain,"%d %d", &led_num, &led_state) == 2)
     {
         switch(led_num)
@@ -458,7 +477,7 @@ uint8_t ConfigFunctionality::setLed(const char *datain, const char **dataout)
 uint8_t ConfigFunctionality::enableSpeedWatchdog(const char *datain, const char **dataout)
 {
     int en;
-    *dataout = NULL;
+    *dataout = EMPTY_STING;
     if(sscanf(datain,"%d",&en) == 1)
     {
         is_speed_watchdog_enabled = (en == 0 ? false : true);
@@ -556,13 +575,15 @@ int main()
 
     nh.initNode();
 
-    uint8_t distance_sensors_init_flag = 0;
-    uint8_t imu_init_flag = 0;
+    bool distance_sensors_init_flag = false;
+    bool imu_init_flag = false;
     bool welcome_flag = true;
-
+    
+    //TODO: error module
     if(distance_sensors->init(100000)==4)
     {
         distance_sensors_enabled = true;
+        distance_sensors_init_flag = true;
         for(int i=0;i<4;i++)
         {
             VL53L0X * sensor = distance_sensors->getSensor(i);
@@ -570,18 +591,12 @@ int main()
             sensor->startContinuous();
         }
     }
-    else
-    {
-        distance_sensors_init_flag++; //TODO: error module
-    }
 
-    if(rosbot_sensors::initImu()!=INV_SUCCESS)
-    {
-        imu_init_flag++; //TODO: error module
-    }
+    if(rosbot_sensors::initImu()==INV_SUCCESS)
+        imu_init_flag = true;
        
-    ros::Subscriber<geometry_msgs::Twist> cmd_vel_sub("/cmd_vel", &velocityCallback);
-    ros::ServiceServer<rosbot_ekf::Configuration::Request,rosbot_ekf::Configuration::Response> config_srv("/config", responseCallback);
+    ros::Subscriber<geometry_msgs::Twist> cmd_vel_sub("cmd_vel", &velocityCallback);
+    ros::ServiceServer<rosbot_ekf::Configuration::Request,rosbot_ekf::Configuration::Response> config_srv("config", responseCallback);
     nh.advertiseService(config_srv);
     nh.subscribe(cmd_vel_sub);
     
@@ -731,14 +746,10 @@ int main()
             {
                 welcome_flag = false;
                 nh.loginfo(WELLCOME_STR);
-            }
-            if(distance_sensors_init_flag)
-            {
-                nh.logerror("VL53L0X sensors initialisation failure!");
-            }
-            if(imu_init_flag)
-            {
-                nh.logerror("MPU9250 initialisation failure!");
+                if(!distance_sensors_init_flag)
+                    nh.logerror("VL53L0X sensors initialisation failure!");
+                if(!imu_init_flag)
+                    nh.logerror("MPU9250 initialisation failure!");
             }
         }
         else

@@ -127,8 +127,6 @@ void RosbotDrive::enable(bool en)
     if(_state == UNINIT)
         return;
     
-    FOR(2) _mot_driver[i]->enable(true);
-
     switch(_state)
     {
         case HALT:
@@ -136,9 +134,16 @@ void RosbotDrive::enable(bool en)
                 _state=OPERATIONAL;
             else
                 _state=IDLE;
+
+            FOR(2) _mot_driver[i]->enable(en);
+            
             break;
         case IDLE:
-            if(en) _state=OPERATIONAL;
+            if(en)
+            {
+                _state=OPERATIONAL;
+                FOR(2) _mot_driver[i]->enable(en);
+            } 
             break;
         case OPERATIONAL:
             if(!en)
@@ -150,6 +155,7 @@ void RosbotDrive::enable(bool en)
                     _tspeed_mps[i]=0;
                     _regulator[i]->reset();
                 }
+                FOR(2) _mot_driver[i]->enable(en);
             } 
             break;
         default:
@@ -264,8 +270,8 @@ void RosbotDrive::stop()
             _state=HALT;
             FOR(4)  
             {
-                _mot[i]->setPower(0);
                 _tspeed_mps[i]=0;
+                _mot[i]->setPower(0);
             }
             break;
         default:
