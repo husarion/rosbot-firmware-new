@@ -1,8 +1,8 @@
 /** @file main.cpp
  * ROSbot firmware.
  * 
- * @date 02-12-2020
- * @version 0.10.0
+ * @date 03-16-2020
+ * @version 0.10.1
  * @copyright GNU GPL-3.0
  */
 #include <rosbot_kinematics.h>
@@ -579,7 +579,8 @@ int main()
     bool welcome_flag = true;
     
     //TODO: add /diagnostic messages
-    if(distance_sensors.init())
+    int num_sens_init;
+    if((num_sens_init = distance_sensors.init()) > 0)
     {
         distance_sensors_enabled = true;
         distance_sensors_init_flag = true;

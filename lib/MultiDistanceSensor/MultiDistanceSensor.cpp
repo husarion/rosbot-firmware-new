@@ -18,11 +18,11 @@ static const uint8_t SENSOR_HW_ADDRESS[]={
 #define SENSORS_SDA_PIN SENS1_PIN4
 #define SENSORS_SCL_PIN SENS1_PIN3
 
-static DigitalInOut xshout1(SENSOR_FR_XSHOUT_PIN, PIN_OUTPUT, OpenDrainNoPull, 0);
-static DigitalInOut xshout2(SENSOR_FL_XSHOUT_PIN, PIN_OUTPUT, OpenDrainNoPull, 0);
-static DigitalInOut xshout3(SENSOR_RR_XSHOUT_PIN, PIN_OUTPUT, OpenDrainNoPull, 0);
-static DigitalInOut xshout4(SENSOR_RL_XSHOUT_PIN, PIN_OUTPUT, OpenDrainNoPull, 0);
-static I2C i2c(SENSORS_SDA_PIN,SENSORS_SCL_PIN);
+static DigitalInOut xshout[]={
+DigitalInOut(SENSOR_FR_XSHOUT_PIN, PIN_OUTPUT, OpenDrainNoPull, 0),
+DigitalInOut(SENSOR_FL_XSHOUT_PIN, PIN_OUTPUT, OpenDrainNoPull, 0),
+DigitalInOut(SENSOR_RR_XSHOUT_PIN, PIN_OUTPUT, OpenDrainNoPull, 0),
+DigitalInOut(SENSOR_RL_XSHOUT_PIN, PIN_OUTPUT, OpenDrainNoPull, 0)};
 
 #else
     #error "Your target is not supported!"
@@ -34,15 +34,13 @@ Mail<SensorsMeasurement, 5> distance_sensor_mail_box;
 Mail<uint8_t, 5> distance_sensor_commands;
 
 MultiDistanceSensor::MultiDistanceSensor()
-:_i2c(&i2c)
-,_xshout{&xshout1, &xshout2, &xshout3, &xshout4}
+:_i2c(nullptr)
+,_xshout{nullptr, nullptr, nullptr, nullptr}
 ,_is_active{false,false,false,false}
-{
-    for(int i=0;i<NUM_DISTANCE_SENSORS;i++)
-    {
-        _sensor[i] = new VL53L0X(*_i2c);
-    }
-}
+,_initialized(false)
+,_sensors_enabled(true)
+,_last_sensor_index(-1)
+{}
 
 MultiDistanceSensor & MultiDistanceSensor::getInstance()
 {
@@ -60,7 +58,7 @@ MultiDistanceSensor::~MultiDistanceSensor()
     for(int i=0;i<4;i++) delete _sensor[i];
 }
 
-bool MultiDistanceSensor::restart()
+int MultiDistanceSensor::restart()
 {
     int result=0;
 
@@ -72,6 +70,8 @@ bool MultiDistanceSensor::restart()
     }
 
     ThisThread::sleep_for(10);
+    
+    _i2c->frequency(DISTANCE_SENSORS_DEFAULT_I2C_FREQ);
 
     for(int i=0;i<4;i++)
     {
@@ -81,13 +81,18 @@ bool MultiDistanceSensor::restart()
         if(_sensor[i]->init())
         {
             _sensor[i]->setAddress(SENSOR_HW_ADDRESS[i]);
-            // _sensor[i]->setMeasurementTimingBudget(100);
+            _sensor[i]->setMeasurementTimingBudget(80);
             _is_active[i]=true;
+            _last_sensor_index = i;
             result++;
+        }
+        else
+        {
+            _xshout[i]->write(0);
         }
     }
 
-    return result == NUM_DISTANCE_SENSORS;
+    return result;
 }
 
 void MultiDistanceSensor::stop()
@@ -115,20 +120,24 @@ void MultiDistanceSensor::start()
     _sensors_enabled = true;
 }
 
-bool MultiDistanceSensor::init()
+int MultiDistanceSensor::init()
 {
     if(_initialized)
-        return false;
-    _i2c->frequency(DISTANCE_SENSORS_DEFAULT_I2C_FREQ);
-    if(restart())
-    {
-        _initialized = true;
-        start();
-        _distance_sensor_thread.start(callback(this,&MultiDistanceSensor::sensors_loop));
-        return true;
-    }
-    else
-        return false;
+        return 0;
+    
+    _i2c = new I2C(SENSORS_SDA_PIN,SENSORS_SCL_PIN);        
+
+    for(int i=0;i<NUM_DISTANCE_SENSORS;i++){
+        _sensor[i] = new VL53L0X(*_i2c);
+        _xshout[i] = &xshout[i]; 
+    } 
+
+    _initialized = true;
+
+    int result;
+    if((result = restart()) > 0) start();
+    _distance_sensor_thread.start(callback(this,&MultiDistanceSensor::sensors_loop));
+    return result;
 }
 
 void MultiDistanceSensor::sensors_loop()
@@ -149,7 +158,7 @@ void MultiDistanceSensor::sensors_loop()
                     start();
                     break;
                 case 2:
-                    i2c.abort_transfer();
+                    _i2c->abort_transfer();
                     restart();
                     break;
                 default:
@@ -160,48 +169,59 @@ void MultiDistanceSensor::sensors_loop()
 
         if (_sensors_enabled) runMeasurement();
         
-        ThisThread::sleep_for(15);
+        ThisThread::sleep_for(10);
     }
 }
 
-int MultiDistanceSensor::runMeasurement()
+void MultiDistanceSensor::processOut()
 {
-    int result = ERR_NONE;
-    SensorsMeasurement * msg;
-    bool is_measurement_ready = (_sensor[LAST_SENSOR_INDEX]->readReg(VL53L0X::RESULT_INTERRUPT_STATUS) & 0x07); 
-    
-    if (_sensor[LAST_SENSOR_INDEX]->last_status != 0)
+    // static uint32_t spin_cnt = 0;
+
+    // if(_m.status == ERR_NOT_INIT && spin_cnt++ % 50 != 0)
+    //     return;
+
+    if(_m.status != ERR_NOT_INIT && !distance_sensor_mail_box.full())
     {
-        if (!distance_sensor_mail_box.full())
-        {
-            msg = distance_sensor_mail_box.alloc();
+        SensorsMeasurement * msg = distance_sensor_mail_box.alloc();
+        if (msg == nullptr)
+            return;
+        
+        memcpy(&msg->range,&_m.range,sizeof(_m.range));
+        msg->timestamp = _m.timestamp;
+        msg->status = _m.status;
+        distance_sensor_mail_box.put(msg);
+    }
+}
 
-            if (msg == nullptr)
-                return ERR_BUSSY;
+void MultiDistanceSensor::runMeasurement()
+{
+    if(_last_sensor_index == -1)
+    {
+        _m.status = ERR_NOT_INIT;
+        return processOut();
+    }
 
-            msg->status = ERR_I2C_FAILURE;
+    bool is_measurement_ready = (_sensor[_last_sensor_index]->readReg(VL53L0X::RESULT_INTERRUPT_STATUS) & 0x07); 
+    
+    if (_sensor[_last_sensor_index]->last_status != 0)
+    {
+        _xshout[_last_sensor_index]->write(0);
+        _is_active[_last_sensor_index] = false;
 
-            for(int i=0;i<4;i++)
-            {
-                msg->range[i] = -1.0;
-                _is_active[i] = false;
-            }
-            distance_sensor_mail_box.put(msg);
-        }
-        result = ERR_I2C_FAILURE;
+        _m.status = ERR_I2C_FAILURE;
+        _m.timestamp = Kernel::get_ms_count();
+        for(int i=0; i<NUM_DISTANCE_SENSORS; i++) _m.range[i] = -1.0f;         
+        
+        return processOut();
     }
     else if(!is_measurement_ready)
     {
-        return ERR_NOT_READY;
+        return;
     }
-    else if (!distance_sensor_mail_box.full())
+    else
     {
-        msg = distance_sensor_mail_box.alloc();
-        if (msg == nullptr)
-            return ERR_BUSSY;
-        
-        msg->timestamp = Kernel::get_ms_count();
-        msg->status = ERR_NONE;
+        _m.timestamp = Kernel::get_ms_count();
+        _m.status = ERR_NONE;
 
         for(int i=0; i<NUM_DISTANCE_SENSORS; i++)
         {
@@ -210,18 +230,18 @@ int MultiDistanceSensor::runMeasurement()
                 uint16_t range = _sensor[i]->readRangeContinuousMillimeters(false);
                 if(_sensor[i]->last_status == 0)
                 {
-                    msg->range[i] = (float) range / 1000.0;
+                    _m.range[i] = (float) range / 1000.0;
                 }
                 else
                 {
-                    msg->range[i] = -1.0;
+                    _m.range[i] = -1.0;
                     _is_active[i] = false;
-                    result = ERR_I2C_FAILURE;
-                    msg->status = ERR_I2C_FAILURE;
+                    _xshout[i]->write(0);     
+                    _m.status = ERR_I2C_FAILURE;
                 }
             }
         }
-        distance_sensor_mail_box.put(msg);
+        
+        return processOut();
     }
-    return result;
 }

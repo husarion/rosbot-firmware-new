@@ -4,7 +4,6 @@
 #include "internal/vl53l0x-mbed/VL53L0X.h"
 
 #define NUM_DISTANCE_SENSORS 4
-#define LAST_SENSOR_INDEX NUM_DISTANCE_SENSORS-1 
 #define DISTANCE_SENSORS_DEFAULT_I2C_FREQ 100000U
 
 enum SensorSelector : uint8_t
@@ -34,20 +33,22 @@ public:
         ERR_NONE = 0,
         ERR_BUSSY = 1,
         ERR_I2C_FAILURE = 2,
-        ERR_NOT_READY = 3
+        ERR_NOT_READY = 3,
+        ERR_NOT_INIT = 4
     };
     static MultiDistanceSensor & getInstance();    
-    bool init();
-
+    int init();
+    
 private:
     static MultiDistanceSensor * _instance;
     MultiDistanceSensor();
     ~MultiDistanceSensor();
-    int runMeasurement();
+    void runMeasurement();
     void start();
     void stop();
-    bool restart();
+    int restart();
     void sensors_loop();
+    void processOut();
 
     I2C * _i2c;
     DigitalInOut * _xshout[NUM_DISTANCE_SENSORS];
@@ -55,6 +56,8 @@ private:
     bool _is_active[NUM_DISTANCE_SENSORS];
     bool _initialized;
     bool _sensors_enabled;
+    int _last_sensor_index;
+    SensorsMeasurement _m;
     Thread _distance_sensor_thread;
 };
 

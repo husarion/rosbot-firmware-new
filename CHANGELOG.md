@@ -161,6 +161,14 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
 ### Added
   - Automatic distance sensors reinitialization in case of sensor malfunction/i2c error.
 
+## [0.10.1] - 2020-10-03
+
+### Fixed
+  - MultiDistanceSensor implementation improved (support of new sensors hardware). 
+
+### Changed  
+  - It is possible now to initialize less than 4 proximity sensors, but the error message will be printed.
+
 ## TODO
   - better code documentation
   - rosserial optimization 
