@@ -9,7 +9,7 @@ ______  _____  _____  _             _           __
 | |\ \ \ \_/ //\__/ /| |_) || (_) || |_       | |   \ V  V / 
 \_| \_| \___/ \____/ |_.__/  \___/  \__|      |_|    \_/\_/  
 ```                                                    
-**Firmware version:** `0.10.0`
+**Firmware version:** `0.11.0`
 
 ## Prerequisites
 You need to install following tools:
@@ -260,6 +260,16 @@ $ roslaunch rosserial.launch serial_port:=/dev/ttyS1 serial_baudrate:=500000
 ROSbot subscribes to:
 
 * `/cmd_vel` with message type `geometry_msgs/Twist`
+* `/cmd_ser` with message type `std_msgs/UInt32` - control configured servo output. See `CSER` service command to learn how to configure servo outputs. Message format:
+
+    ```plain
+    MSB [ duty_cycle_us | output_id] LSB
+            28bits           4bits
+    ```
+    Servos are numbered from 1 to 6, where 1 means hServo 1 output etc. To set SERVO 1 duty cycle to 1000us (0x3E8) run:
+    ```plain
+    $ rostopic pub /cmd_ser std_msgs/UInt32 "data: 0x3E81" --once 
+    ``` 
 
 ROSbot publishes to:
 
@@ -290,6 +300,25 @@ uint8 result
 ```
 
 At the moment following commands are available:
+* `CSER` - CONFIGURE SERVO
+
+    Change a configuration of servo outputs. Can be repeated as many times as required to change several configuration parameter at once. The parameter name should be separated from the value with a full column `:` character. Available parameters:
+    * `S` - select servo output, required with `P` and `W` options [`1`:`6`]
+    * `V` - select voltage mode:
+        * `0` - about 5V
+        * `1` - about 6V
+        * `2` - about 7.4V
+        * `3` - about 8.6V
+    * `E` - enable servo output [`1`,`0`]
+    * `P` - set period in us
+    * `W` - set duty cycle in us
+
+    To set servo voltages to 5V and enable `SERVO 1` output with period 20ms and width 1ms run:
+    ```bash
+    $ rosservice call /config "command: 'CSER'
+    >data: 'V:0 S:1 E:1 P:20000 W:1000 '"
+    ``` 
+
 * `SLED` - SET LED:
 
     To set LED2 on run:

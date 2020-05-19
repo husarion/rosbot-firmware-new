@@ -1,8 +1,8 @@
 /** @file main.cpp
  * ROSbot firmware.
  * 
- * @date 03-16-2020
- * @version 0.10.1
+ * @date 05-19-2020
+ * @version 0.11.0
  * @copyright GNU GPL-3.0
  */
 #include <rosbot_kinematics.h>
@@ -12,6 +12,7 @@
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/BatteryState.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <std_msgs/UInt32.h>
 #include <rosbot_ekf/Imu.h>
 #include <sensor_msgs/BatteryState.h>
 #include <sensor_msgs/Range.h>
@@ -93,6 +94,8 @@ int speed_watchdog_interval = 1000; //ms
 
 Timer odom_watchdog_timer;
 volatile uint32_t last_speed_command_time=0;
+
+rosbot_sensors::ServoManger servo_manager;
 
 static void button1Callback()
 {
@@ -216,6 +219,107 @@ static void velocityCallback(const geometry_msgs::Twist &twist_msg)
     is_speed_watchdog_active = false;
 }
 
+static void servoCallback(const std_msgs::UInt32 &ser_msg)
+{
+    int servo_num = ser_msg.data & 0xF;
+    int servo_width = ser_msg.data >> 4;
+    servo_manager.setWidth(servo_num,servo_width-1);
+}
+
+/**
+ * @brief Parse servo commands.
+ * @param command string to be parsed
+ * @return true if command was successfully parsed
+ */
+static bool servoCommandParser(const char * command) 
+{
+    char buffer[64], key;
+    int value;
+    if(command == nullptr || strlen(command) == 0)
+        return false;
+    strcpy(buffer,command);
+    char * token = strtok(buffer, " ");
+
+    // servo configuration data
+    int servo_num = -1;
+    int servo_width = -1;
+    int servo_period = -1;
+    int servo_enabled = -1;
+    int servo_power = -1;
+    int servo_voltage = -1;
+
+    // parsing commands
+    while(token != NULL)
+    {
+        if(sscanf(token,"%c:%d",&key,&value)==2)
+        {
+            switch(key)
+            {
+                case 'S':
+                case 's':
+                    servo_num = value-1;
+                    break;
+                case 'P':
+                case 'p':
+                    servo_period = value;
+                    break;
+                case 'E':
+                case 'e':
+                    servo_enabled = value;
+                    break;
+                case 'V':
+                case 'v':
+                    servo_voltage = value;
+                    break;
+                case 'W':
+                case 'w':
+                    servo_width = value;
+                    break;
+            }
+        }
+        else
+            return false;
+        token = strtok(NULL," ");
+    }
+
+    if(servo_voltage != -1)
+    {
+        servo_manager.setPowerMode(servo_voltage);
+    }
+
+    if(servo_enabled != -1)
+    {
+        if(servo_num == -1)
+            return false;
+
+        servo_manager.enableOutput(servo_num, servo_enabled);
+    }
+
+    if(servo_period != -1)
+    {
+        if(servo_num == -1)
+            return false;
+
+        if(!servo_manager.setPeriod(servo_num,servo_period))
+            return false;
+    }
+
+    if(servo_width != -1)
+    {
+        if(servo_num == -1)
+            return false;
+
+        if(!servo_manager.setWidth(servo_num,servo_width))
+            return false;
+    }
+
+    if(servo_manager.getEnabledOutputs() > 0)
+        servo_manager.enablePower(true);
+    else
+        servo_manager.enablePower(false);
+    return true;
+}
+
 class ConfigFunctionality
 {
 public:
@@ -235,6 +339,7 @@ public:
     uint8_t enableTfMessages(const char *datain, const char **dataout);
     uint8_t calibrateOdometry(const char *datain, const char **dataout);
     uint8_t enableMotors(const char *datain, const char **dataout);
+    uint8_t configureServo(const char *datain, const char **dataout);
     
 
 private:
@@ -253,6 +358,8 @@ private:
     static const char ETFM_COMMAND[];
     static const char CALI_COMMAND[];
     static const char EMOT_COMMAND[];
+    static const char CSER_COMMAND[];
+    static const char GSER_COMMAND[];
     map<std::string, configuration_srv_fun_t> _commands;
 };
 
@@ -270,6 +377,8 @@ const char ConfigFunctionality::SANI_COMMAND[]="SANI";
 const char ConfigFunctionality::ETFM_COMMAND[]="ETFM";
 const char ConfigFunctionality::CALI_COMMAND[]="CALI";
 const char ConfigFunctionality::EMOT_COMMAND[]="EMOT";
+const char ConfigFunctionality::CSER_COMMAND[]="CSER";
+const char ConfigFunctionality::GSER_COMMAND[]="GSER";
 
 
 ConfigFunctionality::ConfigFunctionality()
@@ -285,6 +394,7 @@ ConfigFunctionality::ConfigFunctionality()
     _commands[ETFM_COMMAND] = &ConfigFunctionality::enableTfMessages;
     _commands[CALI_COMMAND] = &ConfigFunctionality::calibrateOdometry;
     _commands[EMOT_COMMAND] = &ConfigFunctionality::enableMotors;
+    _commands[CSER_COMMAND] = &ConfigFunctionality::configureServo;
 }
 
 uint8_t ConfigFunctionality::enableTfMessages(const char *datain, const char **dataout)
@@ -301,6 +411,13 @@ uint8_t ConfigFunctionality::enableTfMessages(const char *datain, const char **d
         return rosbot_ekf::Configuration::Response::SUCCESS; 
     }
     return rosbot_ekf::Configuration::Response::FAILURE;
+}
+
+uint8_t ConfigFunctionality::configureServo(const char *datain, const char **dataout)
+{
+    *dataout = EMPTY_STING;
+    bool res = servoCommandParser(datain);
+    return res ? rosbot_ekf::Configuration::Response::SUCCESS : rosbot_ekf::Configuration::Response::FAILURE;
 }
 
 uint8_t ConfigFunctionality::calibrateOdometry(const char *datain, const char **dataout)
@@ -590,9 +707,11 @@ int main()
         imu_init_flag = true;
        
     ros::Subscriber<geometry_msgs::Twist> cmd_vel_sub("cmd_vel", &velocityCallback);
+    ros::Subscriber<std_msgs::UInt32> cmd_ser_sub("cmd_ser", &servoCallback);
     ros::ServiceServer<rosbot_ekf::Configuration::Request,rosbot_ekf::Configuration::Response> config_srv("config", responseCallback);
     nh.advertiseService(config_srv);
     nh.subscribe(cmd_vel_sub);
+    nh.subscribe(cmd_ser_sub);
     
     initBatteryPublisher();
     initPosePublisher();

@@ -1,4 +1,4 @@
-#include <test/encoder-test.h>
+#include <test/servo-test.h>
 
 int main()
 {

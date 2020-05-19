@@ -1,31 +1,6 @@
-#ifndef __ROSBOT_SENSORS_H__
-#define __ROSBOT_SENSORS_H__
-
 #include <mbed.h>
-#include <MultiDistanceSensor.h>
-#include <SparkFunMPU9250-DMP.h>
 
-#define FIFO_SAMPLE_RATE_OPERATION 10
-
-namespace rosbot_sensors{
-
-typedef struct 
-{
-    float orientation[4];
-    float angular_velocity[3];
-    float linear_velocity[3];
-    uint32_t timestamp;
-}imu_meas_t;
-
-float updateBatteryWatchdog();
-
-extern Mail<imu_meas_t, 10> imu_sensor_mail_box;
-
-int initImu();
-
-int resetImu();
-
-void enableImu(int en);
+static DigitalOut sens_power(SENS_POWER_ON,0);
 
 class ServoManger : NonCopyable<ServoManger>
 {
@@ -48,7 +23,7 @@ public:
     ServoManger()
     : _servo{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}
     , _voltage_mode(0)
-    , _enabled_outputs(0)
+    , _enebled_outputs(0)
     , _servo_sel1(SERVO_SEL1,0)
     , _servo_sel2(SERVO_SEL2,0)
     , _servo_power(SERVO_POWER_ON,0)
@@ -57,19 +32,6 @@ public:
     void enablePower(bool en = true)
     {
         _servo_power.write( en ? 1 : 0);
-    }
-
-    int getEnabledOutputs()
-    {
-        return _enabled_outputs;
-    }
-
-    PwmOut * getOutput(int output)
-    {
-        if(output < SERVO_OUTPUT_1 || output > SERVO_OUTPUT_6)
-            return nullptr;
-
-        return _servo[output];
     }
 
     bool setWidth(int output, int width_us)
@@ -124,13 +86,12 @@ public:
                 _servo[output] = new PwmOut(SERVO6_PWM_ALT1);
                 break;
             }
-            _enabled_outputs++;
+            // _servo[output]->period_us(1000); // about 1kHz
         }
         else if(_servo[output] != nullptr && !en)
         {
             delete _servo[output];
             _servo[output] = nullptr;
-            _enabled_outputs--;
         }
     }
 
@@ -143,12 +104,36 @@ public:
 private:
     PwmOut *_servo[6];
     int _voltage_mode;
-    int _enabled_outputs;
+    int _enebled_outputs;
     DigitalOut _servo_sel1;
     DigitalOut _servo_sel2;
     DigitalOut _servo_power;
 };
 
+int test()
+{
+    int positions[3] = {1000, 1500, 1800}, i=0;
+    bool dir = true;
+    ServoManger manager;
+    manager.enableOutput(ServoManger::SERVO_OUTPUT_1);
+    manager.enablePower();
+    while(1)
+    {
+        if(dir)
+        {
+            if(i < 3)
+                i++;
+            else
+                dir = !dir;
+        }
+        else
+        {
+            if(i > 0)
+                i--;
+            else
+                dir = !dir;
+        }
+        manager.setWidth(ServoManger::SERVO_OUTPUT_1, positions[i]);
+        ThisThread::sleep_for(1000);
+    }
 }
-
-#endif /* __ROSBOT_SENSORS_H__ */

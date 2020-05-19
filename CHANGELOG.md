@@ -143,7 +143,7 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
 ### Fixed
   - USART6 pins configuration. 
 
-## [0.10.0] - 2020-12-02
+## [0.10.0] - 2020-12-20
 
 ### Changed
   - Topic names changed from global to relative.
@@ -161,13 +161,20 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
 ### Added
   - Automatic distance sensors reinitialization in case of sensor malfunction/i2c error.
 
-## [0.10.1] - 2020-10-03
+## [0.10.1] - 2020-03-10
 
 ### Fixed
   - MultiDistanceSensor implementation improved (support of new sensors hardware). 
 
 ### Changed  
   - It is possible now to initialize less than 4 proximity sensors, but the error message will be printed.
+
+## [0.11.0] - 2020-05-19
+
+### Added
+  - Support for hServo outputs control.
+  - New subscriber on `/cmd_ser` topic for servo output control. See `README` for more details.
+  - New command `CSER` that allows servo outputs configuration. See `README` for more details.
 
 ## TODO
   - better code documentation
