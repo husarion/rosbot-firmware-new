@@ -9,7 +9,7 @@ ______  _____  _____  _             _           __
 | |\ \ \ \_/ //\__/ /| |_) || (_) || |_       | |   \ V  V / 
 \_| \_| \___/ \____/ |_.__/  \___/  \__|      |_|    \_/\_/  
 ```                                                    
-**Firmware version:** `0.11.0`
+**Firmware version:** `0.12.0`
 
 ## Prerequisites
 You need to install following tools:
@@ -317,7 +317,10 @@ At the moment following commands are available:
     ```bash
     $ rosservice call /config "command: 'CSER'
     >data: 'V:0 S:1 E:1 P:20000 W:1000 '"
-    ``` 
+    ```
+
+    ![](.img/servo_voltage_analog_discovery.png) 
+
 
 * `SLED` - SET LED:
 

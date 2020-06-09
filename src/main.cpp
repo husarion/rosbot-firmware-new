@@ -1,8 +1,8 @@
 /** @file main.cpp
  * ROSbot firmware.
  * 
- * @date 05-19-2020
- * @version 0.11.0
+ * @date 06-09-2020
+ * @version 0.12.0
  * @copyright GNU GPL-3.0
  */
 #include <rosbot_kinematics.h>
@@ -778,7 +778,7 @@ int main()
             }
         }
 
-        if (spin_count % 6 == 0) /// cmd_vel, odometry, joint_states, tf messages
+        if (spin_count % 5 == 0) /// cmd_vel, odometry, joint_states, tf messages
         {
             current_vel.linear.x = sqrt(odometry.odom.robot_x_vel * odometry.odom.robot_x_vel + odometry.odom.robot_y_vel * odometry.odom.robot_y_vel);
             current_vel.angular.z = odometry.odom.robot_angular_vel;
@@ -787,8 +787,10 @@ int main()
             pose.pose.orientation = tf::createQuaternionFromYaw(odometry.odom.robot_angular_pos);
             
             pose.header.stamp = nh.now();
-            if(nh.connected())  pose_pub->publish(&pose);
-            if(nh.connected())  vel_pub->publish(&current_vel);
+            if(nh.connected()){
+                pose_pub->publish(&pose);
+                vel_pub->publish(&current_vel);
+            }
 
             if(joint_states_enabled)
             {
