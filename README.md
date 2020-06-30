@@ -9,7 +9,7 @@ ______  _____  _____  _             _           __
 | |\ \ \ \_/ //\__/ /| |_) || (_) || |_       | |   \ V  V / 
 \_| \_| \___/ \____/ |_.__/  \___/  \__|      |_|    \_/\_/  
 ```                                                    
-**Firmware version:** `0.12.0`
+**Firmware version:** `0.13.0`
 
 ## Prerequisites
 You need to install following tools:
@@ -321,6 +321,38 @@ At the moment following commands are available:
 
     ![](.img/servo_voltage_analog_discovery.png) 
 
+* `CPID` - CONFIGURE PID
+
+    Change the motor's pid configuration. This command is similar to CSER command. You can change multiple parameters at the same time.
+    Available parameters:
+    * `kp` - proportional gain (default: 0.8)
+    * `ki` - integral gain (default: 0.2)
+    * `kd` - derivative gain (default: 0.015)
+    * `out_max` - upper limit of the pid output, represents pwm duty cycle (default: 1.0)
+    * `out_min` - lower limit of the pid output, represents pwm duty cycle when motor spins in opposite direction (default: -1.0)
+    * `a_max` - acceleration limit (default: 1.5e-4 m/s2)
+    * `speed_max` - max motor speed (default: 1.5 m/s)
+
+    To limit pid outputs to 80% run: 
+    ```bash
+    $ rosservice call /config "command: 'CPID'
+    >data: 'out_max:0.8 out_min:-0.8'"
+    ```
+    
+* `GPID` - GET PID CONFIGURATION
+
+    To get current PID configuration run:
+    ```bash
+    $ rosservice call /config "command: 'GPID'
+    data: ''" 
+    ```
+    Response:
+    ```bash
+    data: "kp:0.800 ki:0.200 kd:0.015 out_max:1.000 out_min:-1.000 a_max:1. 500e-04 speed_max:\
+      \ 1.500"
+    result: 0
+
+    ```
 
 * `SLED` - SET LED:
 

@@ -243,20 +243,17 @@ void RosbotDrive::updateWheelCoefficients(const RosbotWheel & params)
     _regulator_loop_enabled = true;
 }
 
-// void RosbotDrive::updatePidParams(const RosbotRegulator_params_t * params, bool reset)
-// {
-//     _regulator_loop_enabled = false;
-//     _pid_params = *params;
-//     FOR(ROSBOT_DRIVE_TYPE)
-//     {
-//         _pid_instance[i]->Kp = _pid_params.kp;
-//         _pid_instance[i]->Ki = _pid_params.ki;
-//         _pid_instance[i]->Kd = _pid_params.kd;
-//         arm_pid_init_f32(_pid_instance[i],reset);
-//     }
-//     _pid_interval_s = params->dt_ms/1000.0f;
-//     _regulator_loop_enabled = true;
-// }
+void RosbotDrive::updatePidParams(const RosbotRegulator_params & params)
+{
+    _regulator_loop_enabled = false;
+        FOR(4) _regulator[i]->updateParams(params);
+    _regulator_loop_enabled = true;
+}
+
+void RosbotDrive::getPidParams(RosbotRegulator_params & params)
+{
+    _regulator[0]->getParams(params);
+}
 
 void RosbotDrive::stop()
 {

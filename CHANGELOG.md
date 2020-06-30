@@ -176,16 +176,23 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
   - New subscriber on `/cmd_ser` topic for servo output control. See `README` for more details.
   - New command `CSER` that allows servo outputs configuration. See `README` for more details.
 
-
 ## [0.12.0] - 2020-06-09
 
 ### Changed
   - Updated rosserial-mbed implementation (BufferedSerial lib changed to UARTSerial).
   - `/pose` and `/velocity` publication frequency increased to ~ 20Hz. 
 
+## [0.13.0] - 2020-06-30
+
+### Added
+  - New command `CPID` that enables pid configuration. See `README` for more details.
+  - New command `GPID` that returns current pid configuration. See `README` for more details.
+
+### Changed
+  - Updated mpu9250-mbed library.
+
 ## TODO
   - better code documentation
-  - rosserial optimization 
   - better modular, oop implementation,
   - use of /diagnostics topic
   - better forward regulator controlling acceleration

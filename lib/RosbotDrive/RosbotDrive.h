@@ -106,7 +106,9 @@ public:
 
     void updateWheelCoefficients(const RosbotWheel & params); 
 
-    // void updatePidParams(const RosbotRegulator_params * params, bool reset);
+    void updatePidParams(const RosbotRegulator_params & params);
+
+    void getPidParams(RosbotRegulator_params & params);
 
     // void getPidDebugData(PidDebugData * data, RosbotMotNum mot_num);
     
