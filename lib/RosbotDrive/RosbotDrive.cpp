@@ -32,14 +32,24 @@ const RosbotWheel RosbotDrive::DEFAULT_WHEEL_PARAMS = {
     .encoder_cpr = 48,
     .polarity = 0b00111100};
 
+// const RosbotRegulator_params RosbotDrive::DEFAULT_REGULATOR_PARAMS = {
+//     .kp = 0.8,
+//     .ki = 0.2,
+//     .kd = 0.015,
+//     .out_min = -1.0,
+//     .out_max = 1.0,
+//     .a_max = 1.5e-4,
+//     .speed_max = 1.5,
+//     .dt_ms = 10};
+
 const RosbotRegulator_params RosbotDrive::DEFAULT_REGULATOR_PARAMS = {
     .kp = 0.8,
     .ki = 0.2,
     .kd = 0.015,
-    .out_min = -1.0,
-    .out_max = 1.0,
+    .out_min = -0.8,
+    .out_max = 0.8,
     .a_max = 1.5e-4,
-    .speed_max = 1.5,
+    .speed_max = 1.25,
     .dt_ms = 10};
 
 RosbotDrive * RosbotDrive::_instance = NULL;

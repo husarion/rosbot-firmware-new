@@ -190,6 +190,7 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
 
 ### Changed
   - Updated mpu9250-mbed library.
+  - New default PID regulator settings.
 
 ## TODO
   - better code documentation

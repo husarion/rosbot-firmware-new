@@ -328,10 +328,10 @@ At the moment following commands are available:
     * `kp` - proportional gain (default: 0.8)
     * `ki` - integral gain (default: 0.2)
     * `kd` - derivative gain (default: 0.015)
-    * `out_max` - upper limit of the pid output, represents pwm duty cycle (default: 1.0)
-    * `out_min` - lower limit of the pid output, represents pwm duty cycle when motor spins in opposite direction (default: -1.0)
+    * `out_max` - upper limit of the pid output, represents pwm duty cycle (default: 0.80)
+    * `out_min` - lower limit of the pid output, represents pwm duty cycle when motor spins in opposite direction (default: -0.80)
     * `a_max` - acceleration limit (default: 1.5e-4 m/s2)
-    * `speed_max` - max motor speed (default: 1.5 m/s)
+    * `speed_max` - max motor speed (default: 1.25 m/s)
 
     To limit pid outputs to 80% run: 
     ```bash

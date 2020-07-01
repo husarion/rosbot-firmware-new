@@ -368,14 +368,14 @@ static bool pidCommandParser(const char * command)
         else if(strcmp("out_max", key) == 0)
         {
             if(sscanf(token,"out_max:%f", &value) == 1)
-                out_max = min<float>(value,1.0);
+                out_max = min<float>(value,0.80f);
             else
                 return false;
         }
         else if(strcmp("out_min", key) == 0)
         {
             if(sscanf(token,"out_min:%f", &value) == 1)
-                out_min = max<float>(value,-1.0);
+                out_min = max<float>(value,-0.80f);
             else
                 return false;
         }
@@ -389,7 +389,7 @@ static bool pidCommandParser(const char * command)
         else if(strcmp("speed_max", key) == 0)
         {
             if(sscanf(token,"speed_max:%f", &value) == 1)
-                speed_max = value;
+                speed_max = min<float>(value,1.25f);
             else
                 return false;
         }
