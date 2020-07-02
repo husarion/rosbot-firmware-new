@@ -134,24 +134,24 @@ int initImu()
     // imu_int.fall(q->event(callback(imuCallback)));
     imu_int.fall(callback(imu_interrupt_cb));
 
-    err = imu.dmpBegin(DMP_FEATURE_6X_LP_QUAT     | // Enable 6-axis quat
+    err += imu.dmpBegin(DMP_FEATURE_6X_LP_QUAT     | // Enable 6-axis quat
                        DMP_FEATURE_GYRO_CAL       | // Use gyro calibration
                        DMP_FEATURE_SEND_RAW_ACCEL | // Enable raw accel measurements
-                       DMP_FEATURE_SEND_RAW_GYRO,   // Enable raw gyre measurements
+                       DMP_FEATURE_SEND_CAL_GYRO,   // Enable cal gyro measurements
                        10);                         // Set DMP FIFO rate
 
-    err = imu.dmpSetOrientation(DEFAULT_IMU_ORIENTATION);
+    err += imu.dmpSetOrientation(DEFAULT_IMU_ORIENTATION);
     
-    err = imu.setGyroFSR(2000); // 2000dps for gyro
+    err += imu.setGyroFSR(2000); // 2000dps for gyro
 
-    err = imu.setLPF(42); // 42Hz low pass filter
+    err += imu.setLPF(42); // 42Hz low pass filter
     
     // err = imu.dmpSetOrientation(MPU_ORIENTATION);
     // The interrupt level can either be active-high or low.
     // Configure as active-low, since we'll be using the pin's
     // internal pull-up resistor.
     // Options are INT_ACTIVE_LOW or INT_ACTIVE_HIGH
-    err = imu.setIntLevel(INT_ACTIVE_LOW);
+    err += imu.setIntLevel(INT_ACTIVE_LOW);
 
     // The interrupt can be set to latch until data has
     // been read, or to work as a 50us pulse.
@@ -159,11 +159,11 @@ int initImu()
     // as soon as we see the pin go LOW.
     // Options are INT_LATCHED or INT_50US_PULSE
     // Reading any register will clear the interrupt!!!
-    err = imu.setIntLatched(INT_LATCHED);
+    err += imu.setIntLatched(INT_LATCHED);
 
     // Use enableInterrupt() to configure the MPU-9250's
     // interrupt output as a "data ready" indicator.
-    err = imu.enableInterrupt(1);
+    err += imu.enableInterrupt(1);
     
     // Disable dmp - it is enabled on demand using enableImu()
     // err = imu.dmpState(1);
@@ -202,7 +202,7 @@ int resetImu()
     err = imu.dmpBegin(DMP_FEATURE_6X_LP_QUAT     | // Enable 6-axis quat
                        DMP_FEATURE_GYRO_CAL       | // Use gyro calibration
                        DMP_FEATURE_SEND_RAW_ACCEL | // Enable raw accel measurements
-                       DMP_FEATURE_SEND_RAW_GYRO,   // Enable raw gyre measurements
+                       DMP_FEATURE_SEND_CAL_GYRO,   // Enable raw gyre measurements
                        10);                         // Set DMP FIFO rate
 
     err = imu.dmpSetOrientation(DEFAULT_IMU_ORIENTATION);

@@ -807,6 +807,7 @@ int main()
 {
     ThisThread::sleep_for(100);
     sens_power = 1; // sensors power on
+    ThisThread::sleep_for(100);
     odom_watchdog_timer.start();
 
     RosbotDrive & drive = RosbotDrive::getInstance();
