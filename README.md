@@ -328,15 +328,15 @@ At the moment following commands are available:
     * `kp` - proportional gain (default: 0.8)
     * `ki` - integral gain (default: 0.2)
     * `kd` - derivative gain (default: 0.015)
-    * `out_max` - upper limit of the pid output, represents pwm duty cycle (default: 0.80)
-    * `out_min` - lower limit of the pid output, represents pwm duty cycle when motor spins in opposite direction (default: -0.80)
+    * `out_max` - upper limit of the pid output, represents pwm duty cycle (default: 0.80, max: 0.80)
+    * `out_min` - lower limit of the pid output, represents pwm duty cycle when motor spins in opposite direction (default: -0.80, min: -0.80)
     * `a_max` - acceleration limit (default: 1.5e-4 m/s2)
-    * `speed_max` - max motor speed (default: 1.25 m/s)
+    * `speed_max` - max motor speed (default: 1.0 m/s, max: 1.25 m/s)
 
-    To limit pid outputs to 80% run: 
+    To limit pid outputs to 75% run: 
     ```bash
     $ rosservice call /config "command: 'CPID'
-    >data: 'out_max:0.8 out_min:-0.8'"
+    >data: 'out_max:0.75 out_min:-0.75'"
     ```
     
 * `GPID` - GET PID CONFIGURATION

@@ -49,7 +49,7 @@ const RosbotRegulator_params RosbotDrive::DEFAULT_REGULATOR_PARAMS = {
     .out_min = -0.8,
     .out_max = 0.8,
     .a_max = 1.5e-4,
-    .speed_max = 1.25,
+    .speed_max = 1.0,
     .dt_ms = 10};
 
 RosbotDrive * RosbotDrive::_instance = NULL;
