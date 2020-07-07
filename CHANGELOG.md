@@ -192,6 +192,12 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
   - Updated mpu9250-mbed library.
   - New default PID regulator settings.
 
+## [0.13.0] - 2020-07-07
+
+### Fixed
+  - Update MPU9250 readings only if there is more then 32 bytes in the fifo.
+  - Fixed servo numeration in cmd_ser topic.
+
 ## TODO
   - better code documentation
   - better modular, oop implementation,

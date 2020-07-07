@@ -1,8 +1,8 @@
 /** @file main.cpp
  * ROSbot firmware.
  * 
- * @date 06-30-2020
- * @version 0.13.0
+ * @date 07-07-2020
+ * @version 0.13.1
  * @copyright GNU GPL-3.0
  */
 #include <rosbot_kinematics.h>
@@ -223,7 +223,7 @@ static void servoCallback(const std_msgs::UInt32 &ser_msg)
 {
     int servo_num = ser_msg.data & 0xF;
     int servo_width = ser_msg.data >> 4;
-    servo_manager.setWidth(servo_num,servo_width-1);
+    servo_manager.setWidth(servo_num-1, servo_width);
 }
 
 /**

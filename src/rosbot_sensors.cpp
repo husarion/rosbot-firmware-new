@@ -85,7 +85,15 @@ static void imuCallback()
 {
     // Use dmpUpdateFifo to update the ax, gx, mx, etc. values
     imu_mutex.lock();
-    if(imu.fifoAvailable())
+    // 10.2 Content of DMP Output to FIFO
+    // The exact contents of the data output to the FIFO depend on the features that were enabled in Section 6.
+    // When all features are enabled, a single set of FIFO data consists of 48 bytes. The data is ordered as shown
+    // below:
+    // * Low Power 3-Axis Quaternion (16 bytes)
+    // * Low Power 6-Axis Quaternion (16 bytes)
+    // * Raw Sensor Data (12 bytes)
+    // * Gesture Word (Android Orientation + Tap outputs) (4 bytes)
+    if(imu.fifoAvailable() >= 32)
     {
         if (imu.dmpUpdateFifo() == INV_SUCCESS)
         {
