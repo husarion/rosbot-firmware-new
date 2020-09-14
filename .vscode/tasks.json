@@ -28,7 +28,7 @@
             },
             "problemMatcher": {
                 "owner": "cpp",
-                "fileLocation": "absolute",
+                "fileLocation": ["relative", "${workspaceFolder}"],
                 "pattern": {
                     "regexp": "^(\\[ERROR\\])*\\s*(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
                     "file": 2,
@@ -63,7 +63,7 @@
             "group": "build",
             "problemMatcher": {
                 "owner": "cpp",
-                "fileLocation": "absolute",
+                "fileLocation": ["relative", "${workspaceFolder}"],
                 "pattern": {
                     "regexp": "^(\\[ERROR\\])*\\s*(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
                     "file": 2,
