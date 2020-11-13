@@ -9,3 +9,4 @@ mbed_settings.pyc
 core2-flasher
 .vscode/.cortex*
 create_firmware_files.py
+mbed-os

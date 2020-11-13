@@ -2,11 +2,12 @@
  * ROSbot firmware.
  * 
  * @date 07-07-2020
- * @version 0.13.1
+ * @version 0.14.0
  * @copyright GNU GPL-3.0
  */
 #include <rosbot_kinematics.h>
 #include <rosbot_sensors.h>
+#include <ImuDriver.h>
 #include <ros.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Twist.h>
@@ -54,6 +55,20 @@ ROSBOT_FW_VERSION
 #endif
 
 #define MAIN_LOOP_INTERVAL_MS 10
+#define IMU_I2C_FREQUENCY 100000L
+#define IMU_I2C_SCL SENS2_PIN3
+#define IMU_I2C_SDA SENS2_PIN4
+
+extern Mail<ImuDriver::ImuMesurement, 10> imu_sensor_mail_box;
+const char * imu_sensor_type_string[] = {
+    "BNO055_ADDR_A",
+    "BNO055_ADDR_B",
+    "MPU9250",
+    "MPU9255",
+    "UNKNOWN"
+};
+char imu_description_string[64] = "";
+ImuDriver * imu_driver_ptr;
 
 geometry_msgs::Twist current_vel;
 sensor_msgs::JointState joint_states;
@@ -136,6 +151,7 @@ static void initRangePublisher()
         range_msg[i].field_of_view = 0.26;
         range_msg[i].min_range = 0.03;
         range_msg[i].max_range = 0.90;
+        range_msg[i].header.frame_id = range_id[i];
         range_msg[i].radiation_type = sensor_msgs::Range::INFRARED;
         range_pub[i] = new ros::Publisher(range_pub_names[i],&range_msg[i]);
         nh.advertise(*range_pub[i]);
@@ -633,14 +649,14 @@ ConfigFunctionality::configuration_srv_fun_t ConfigFunctionality::findFunctional
 
 uint8_t ConfigFunctionality::resetImu(const char *datain, const char **dataout)
 {
-    rosbot_sensors::resetImu();
-    return rosbot_ekf::Configuration::Response::SUCCESS;
+    //TODO implement
+    return rosbot_ekf::Configuration::Response::FAILURE;
 }
 
 uint8_t ConfigFunctionality::setMotorsAccelDeaccel(const char *datain, const char **dataout)
 {
     float accel, deaccel;
-    //TODO 
+    //TODO implement
     return rosbot_ekf::Configuration::Response::FAILURE;
 }
 
@@ -656,8 +672,14 @@ uint8_t ConfigFunctionality::enableImu(const char *datain, const char **dataout)
     int en;
     if(sscanf(datain,"%d",&en) == 1)
     {
-        events::EventQueue * q = mbed_event_queue();
-        q->call(Callback<void(int)>(&rosbot_sensors::enableImu),en);
+        if(en)
+        {
+            imu_driver_ptr->start();
+        }
+        else
+        {
+            imu_driver_ptr->stop();
+        }
         return rosbot_ekf::Configuration::Response::SUCCESS; 
     }
     return rosbot_ekf::Configuration::Response::FAILURE;
@@ -837,8 +859,19 @@ int main()
         distance_sensors_init_flag = true;
     }
 
-    if(rosbot_sensors::initImu()==INV_SUCCESS)
+    I2C * i2c_ptr = new I2C(IMU_I2C_SDA, IMU_I2C_SCL);
+    i2c_ptr->frequency(IMU_I2C_FREQUENCY);
+
+    ImuDriver::Type type = ImuDriver::getType(i2c_ptr,2);
+    sprintf(imu_description_string, "Detected sensor: %s\r\n", imu_sensor_type_string[type]);
+
+    if(type != ImuDriver::UNKNOWN)
+    {
+        imu_driver_ptr = new ImuDriver(i2c_ptr,type);
+        imu_driver_ptr->init();
+        imu_driver_ptr->start();
         imu_init_flag = true;
+    }
        
     ros::Subscriber<geometry_msgs::Twist> cmd_vel_sub("cmd_vel", &velocityCallback);
     ros::Subscriber<std_msgs::UInt32> cmd_ser_sub("cmd_ser", &servoCallback);
@@ -1001,11 +1034,11 @@ int main()
         //     }
         // }
         
-        evt = rosbot_sensors::imu_sensor_mail_box.get(0);
+        evt = imu_sensor_mail_box.get(0);
 
         if(evt.status == osEventMail)
         {
-            rosbot_sensors::imu_meas_t * message = (rosbot_sensors::imu_meas_t*)evt.value.p;
+            ImuDriver::ImuMesurement * message = (ImuDriver::ImuMesurement*)evt.value.p;
 
             imu_msg.header.stamp = nh.now(message->timestamp);
             imu_msg.orientation.x = message->orientation[0];
@@ -1017,7 +1050,7 @@ int main()
                 imu_msg.angular_velocity[i] = message->angular_velocity[i];
                 imu_msg.linear_acceleration[i] = message->linear_velocity[i];
             }
-            rosbot_sensors::imu_sensor_mail_box.free(message);
+            imu_sensor_mail_box.free(message);
             if(nh.connected()) imu_pub->publish(&imu_msg);
         }
         
@@ -1031,7 +1064,9 @@ int main()
                 if(!distance_sensors_init_flag)
                     nh.logerror("VL53L0X sensors initialisation failure!");
                 if(!imu_init_flag)
-                    nh.logerror("MPU9250 initialisation failure!");
+                    nh.logerror("No sensor detected!");
+                else
+                    nh.loginfo(imu_description_string);
             }
         }
         else
