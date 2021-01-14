@@ -206,6 +206,9 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
 ## [0.14.1] - 2020-11-16
   - angular velocity and linear acceleration for BNO055 IMU sensor
 
+## [0.14.2] - 2020-12-18
+  - fixed bug with MPU9250 initialization (both sensors support)
+
 ## TODO
   - better code documentation
   - better modular, oop implementation,

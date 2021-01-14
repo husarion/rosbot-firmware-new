@@ -9,7 +9,7 @@ ______  _____  _____  _             _           __
 | |\ \ \ \_/ //\__/ /| |_) || (_) || |_       | |   \ V  V / 
 \_| \_| \___/ \____/ |_.__/  \___/  \__|      |_|    \_/\_/  
 ```                                                    
-**Firmware version:** `0.14.1`
+**Firmware version:** `0.14.2`
 
 ## Prerequisites
 You need to install following tools:
@@ -83,7 +83,7 @@ To check current configuration run:
 (mbed_venv)$ mbed config --list
 
 ```
-## mbed-os library installation
+## workspace setup
 
 1. Import mbed-os to `core2-mbed-workspace` directory:
 
@@ -91,19 +91,27 @@ To check current configuration run:
 (mbed_venv)$ mbed import mbed-os
 ```
 
-2. The firmware uses Mbed OS version 5.14.2. In mbed-os directory run:
+2. The firmware uses Mbed OS version 5.14.2. In `mbed-os` directory run:
 
 ```bash
-(mbed_venv)$ mbed update mbed-os-5.14.2
+(mbed_venv)$ cd mbed-os && mbed update mbed-os-5.14.2
 ```
 
 3. Install required python packages
 
 ```bash
-(mbed_venv)$ cd mbed-os && pip install -r requirements.txt
+(mbed_venv)$ pip install -r requirements.txt
 ```
 
-4. Deactivate virtual environment
+4. Import/copy this repo to `core2-mbed-workspace` directory. After that enter `lib` directory and run:
+
+```bash
+(mbed_venv)$ mbed update master
+```
+
+It will download all required dependencies.
+
+5. Deactivate virtual environment
 ```bash
 (mbed_venv)$ deactivate
 ```

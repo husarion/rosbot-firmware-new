@@ -1,8 +1,8 @@
 /** @file main.cpp
  * ROSbot firmware.
  * 
- * @date 07-07-2020
- * @version 0.14.0
+ * @date 18-12-2020
+ * @version 0.14.2
  * @copyright GNU GPL-3.0
  */
 #include <rosbot_kinematics.h>
@@ -827,6 +827,11 @@ int print_debug_info()
 
 int main()
 {
+    int spin_result;
+    int err_msg=0;
+    uint32_t spin_count=1;
+    float curr_odom_calc_time, last_odom_calc_time = 0.0f;
+
     ThisThread::sleep_for(100);
     sens_power = 1; // sensors power on
     ThisThread::sleep_for(100);
@@ -855,7 +860,6 @@ int main()
     int num_sens_init;
     if((num_sens_init = distance_sensors.init()) > 0)
     {
-        distance_sensors_enabled = true;
         distance_sensors_init_flag = true;
     }
 
@@ -897,14 +901,19 @@ int main()
     print_debug_info();
 #endif /* MEMORY_DEBUG_INFO */ 
 
-    int spin_result;
-    int err_msg=0;
-    uint32_t spin_count=1;
-    float curr_odom_calc_time, last_odom_calc_time = 0.0f;
+    if(imu_init_flag)
+        imu_driver_ptr->start();
+
+    if(distance_sensors_init_flag)
+    {
+        uint8_t * data = distance_sensor_commands.alloc();
+        *data = 1;
+        distance_sensor_commands.put(data);
+        distance_sensors_enabled = true;
+    }
     
     while (1)
     {
-
         if(is_speed_watchdog_enabled)
         {
             if(!is_speed_watchdog_active && (odom_watchdog_timer.read_ms() - last_speed_command_time) > speed_watchdog_interval)
@@ -989,10 +998,10 @@ int main()
             if(nh.connected()) battery_pub->publish(&battery_state);
         }
 
-        osEvent evt = distance_sensor_mail_box.get(0);
-        if(evt.status == osEventMail)
+        osEvent evt1 = distance_sensor_mail_box.get(0);
+        if(evt1.status == osEventMail)
         {
-            SensorsMeasurement * message = (SensorsMeasurement*)evt.value.p;
+            SensorsMeasurement * message = (SensorsMeasurement*)evt1.value.p;
             if(message->status == MultiDistanceSensor::ERR_I2C_FAILURE)
             {
                 err_msg++;
@@ -1034,11 +1043,11 @@ int main()
         //     }
         // }
         
-        evt = imu_sensor_mail_box.get(0);
+        osEvent evt2 = imu_sensor_mail_box.get(0);
 
-        if(evt.status == osEventMail)
+        if(evt2.status == osEventMail)
         {
-            ImuDriver::ImuMesurement * message = (ImuDriver::ImuMesurement*)evt.value.p;
+            ImuDriver::ImuMesurement * message = (ImuDriver::ImuMesurement*)evt2.value.p;
 
             imu_msg.header.stamp = nh.now(message->timestamp);
             imu_msg.orientation.x = message->orientation[0];
@@ -1064,7 +1073,7 @@ int main()
                 if(!distance_sensors_init_flag)
                     nh.logerror("VL53L0X sensors initialisation failure!");
                 if(!imu_init_flag)
-                    nh.logerror("No sensor detected!");
+                    nh.logerror("No IMU sensor detected!");
                 else
                     nh.loginfo(imu_description_string);
             }
@@ -1074,11 +1083,13 @@ int main()
             welcome_flag = true;
         }
 
-        if((spin_result=nh.spinOnce()) != ros::SPIN_OK)
-        {
-            // nh.logwarn(spin_result == -1 ? "SPIN_ERR" : "SPIN_TIMEOUT");
-            do {}while(0); // do nothing at the moment
-        }
+        nh.spinOnce();
+
+        // if((spin_result=nh.spinOnce()) != ros::SPIN_OK)
+        // {
+        //     // nh.logwarn(spin_result == -1 ? "SPIN_ERR" : "SPIN_TIMEOUT");
+        //     do {}while(0); // do nothing at the moment
+        // }
         spin_count++;
         ThisThread::sleep_for(MAIN_LOOP_INTERVAL_MS);
     }

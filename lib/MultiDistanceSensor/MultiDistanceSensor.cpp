@@ -38,7 +38,7 @@ MultiDistanceSensor::MultiDistanceSensor()
 ,_xshout{nullptr, nullptr, nullptr, nullptr}
 ,_is_active{false,false,false,false}
 ,_initialized(false)
-,_sensors_enabled(true)
+,_sensors_enabled(false)
 ,_last_sensor_index(-1)
 {}
 
@@ -135,8 +135,8 @@ int MultiDistanceSensor::init()
     _initialized = true;
 
     int result;
-    if((result = restart()) > 0) start();
-    _distance_sensor_thread.start(callback(this,&MultiDistanceSensor::sensors_loop));
+    if((result = restart()) > 0)
+        _distance_sensor_thread.start(callback(this,&MultiDistanceSensor::sensors_loop));
     return result;
 }
 
