@@ -46,7 +46,7 @@ struct RosbotWheel
     float tyre_deflation;
     float gear_ratio;
     uint32_t encoder_cpr; // conuts per revolution
-    uint8_t polarity; // LSB -> motor, MSB -> encoder
+    uint8_t polarity;     // LSB -> motor, MSB -> encoder
 };
 
 struct NewTargetSpeed
@@ -63,6 +63,13 @@ struct PidDebugData
     float error;
 };
 
+struct RosbotSpeed
+{
+    float lin_x;
+    float lin_y;
+    float ang_z;
+};
+
 //TODO: documentation
 /**
  * @brief Rosbot Drive Module.
@@ -75,45 +82,45 @@ public:
     static const RosbotWheel DEFAULT_WHEEL_PARAMS; /**< Default ROSbot's wheels parameters. */
 
     static const RosbotRegulator_params DEFAULT_REGULATOR_PARAMS; /**< Default ROSbot regulator parameters. */
-    
-    static RosbotDrive & getInstance(); 
 
-    void init(const RosbotWheel & wheel_params, const RosbotRegulator_params & params); 
-    
-    void enable(bool en=true); 
+    static RosbotDrive &getInstance();
 
-    void enablePidReg(bool en); 
+    void init(const RosbotWheel &wheel_params, const RosbotRegulator_params &params);
 
-    bool isPidEnabled();  
+    void enable(bool en = true);
 
-    void stop(); 
+    void enablePidReg(bool en);
+
+    bool isPidEnabled();
+
+    void stop();
 
     void setupMotorSequence(RosbotMotNum first, RosbotMotNum second, RosbotMotNum third, RosbotMotNum fourth);
-    
-    float getSpeed(RosbotMotNum mot_num); 
 
-    float getSpeed(RosbotMotNum mot_num, SpeedMode mode); 
+    float getSpeed(RosbotMotNum mot_num);
 
-    float getDistance(RosbotMotNum mot_num); 
+    float getSpeed(RosbotMotNum mot_num, SpeedMode mode);
 
-    float getAngularPos(RosbotMotNum mot_num); 
+    float getDistance(RosbotMotNum mot_num);
 
-    int32_t getEncoderTicks(RosbotMotNum mot_num); 
+    float getAngularPos(RosbotMotNum mot_num);
 
-    void resetDistance(); 
+    int32_t getEncoderTicks(RosbotMotNum mot_num);
 
-    void updateTargetSpeed(const NewTargetSpeed & new_speed); 
+    void resetDistance();
 
-    void updateWheelCoefficients(const RosbotWheel & params); 
+    void updateTargetSpeed(const NewTargetSpeed &new_speed);
 
-    void updatePidParams(const RosbotRegulator_params & params);
+    void updateWheelCoefficients(const RosbotWheel &params);
 
-    void getPidParams(RosbotRegulator_params & params);
+    void updatePidParams(const RosbotRegulator_params &params);
+
+    void getPidParams(RosbotRegulator_params &params);
 
     // void getPidDebugData(PidDebugData * data, RosbotMotNum mot_num);
-    
+
 private:
-    static RosbotDrive * _instance;
+    static RosbotDrive *_instance;
 
     RosbotDrive();
 
@@ -130,15 +137,15 @@ private:
     volatile int32_t _cdistance[4];
     uint8_t _motor_sequence[4];
 
-    int _regulator_interval_ms; 
+    int _regulator_interval_ms;
 
     float _wheel_coefficient1;
     float _wheel_coefficient2;
-    
-    DRV8848 * _mot_driver[2];
-    DRV8848::DRVMotor * _mot[4]; 
-    Encoder * _encoder[4];
-    RosbotRegulator * _regulator[4];
+
+    DRV8848 *_mot_driver[2];
+    DRV8848::DRVMotor *_mot[4];
+    Encoder *_encoder[4];
+    RosbotRegulator *_regulator[4];
 
     Mutex rosbot_drive_mutex;
 };
