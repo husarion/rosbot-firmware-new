@@ -1,12 +1,13 @@
 /** @file main.cpp
  * ROSbot firmware.
  * 
- * @date 07-07-2020
- * @version 0.13.1
+ * @date 18-12-2020
+ * @version 0.14.2
  * @copyright GNU GPL-3.0
  */
 #include <rosbot_kinematics.h>
 #include <rosbot_sensors.h>
+#include <ImuDriver.h>
 #include <ros.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Twist.h>
@@ -53,6 +54,20 @@ static int parseColorStr(const char *color_str, Color_t *color_ptr)
 #endif
 
 #define MAIN_LOOP_INTERVAL_MS 10
+#define IMU_I2C_FREQUENCY 100000L
+#define IMU_I2C_SCL SENS2_PIN3
+#define IMU_I2C_SDA SENS2_PIN4
+
+extern Mail<ImuDriver::ImuMesurement, 10> imu_sensor_mail_box;
+const char * imu_sensor_type_string[] = {
+    "BNO055_ADDR_A",
+    "BNO055_ADDR_B",
+    "MPU9250",
+    "MPU9255",
+    "UNKNOWN"
+};
+char imu_description_string[64] = "";
+ImuDriver * imu_driver_ptr;
 
 geometry_msgs::Twist current_vel;
 sensor_msgs::JointState joint_states;
@@ -138,6 +153,7 @@ static void initRangePublisher()
         range_msg[i].field_of_view = 0.26;
         range_msg[i].min_range = 0.03;
         range_msg[i].max_range = 0.90;
+        range_msg[i].header.frame_id = range_id[i];
         range_msg[i].radiation_type = sensor_msgs::Range::INFRARED;
         range_pub[i] = new ros::Publisher(range_pub_names[i], &range_msg[i]);
         nh.advertise(*range_pub[i]);
@@ -636,14 +652,14 @@ ConfigFunctionality::configuration_srv_fun_t ConfigFunctionality::findFunctional
 
 uint8_t ConfigFunctionality::resetImu(const char *datain, const char **dataout)
 {
-    rosbot_sensors::resetImu();
-    return rosbot_ekf::Configuration::Response::SUCCESS;
+    //TODO implement
+    return rosbot_ekf::Configuration::Response::FAILURE;
 }
 
 uint8_t ConfigFunctionality::setMotorsAccelDeaccel(const char *datain, const char **dataout)
 {
     float accel, deaccel;
-    //TODO
+    //TODO implement
     return rosbot_ekf::Configuration::Response::FAILURE;
 }
 
@@ -659,9 +675,15 @@ uint8_t ConfigFunctionality::enableImu(const char *datain, const char **dataout)
     int en;
     if (sscanf(datain, "%d", &en) == 1)
     {
-        events::EventQueue *q = mbed_event_queue();
-        q->call(Callback<void(int)>(&rosbot_sensors::enableImu), en);
-        return rosbot_ekf::Configuration::Response::SUCCESS;
+        if(en)
+        {
+            imu_driver_ptr->start();
+        }
+        else
+        {
+            imu_driver_ptr->stop();
+        }
+        return rosbot_ekf::Configuration::Response::SUCCESS; 
     }
     return rosbot_ekf::Configuration::Response::FAILURE;
 }
@@ -810,6 +832,11 @@ int print_debug_info()
 
 int main()
 {
+    int spin_result;
+    int err_msg=0;
+    uint32_t spin_count=1;
+    float curr_odom_calc_time, last_odom_calc_time = 0.0f;
+
     ThisThread::sleep_for(100);
     sens_power = 1; // sensors power on
     ThisThread::sleep_for(100);
@@ -838,16 +865,26 @@ int main()
     int num_sens_init;
     if ((num_sens_init = distance_sensors.init()) > 0)
     {
-        distance_sensors_enabled = true;
         distance_sensors_init_flag = true;
     }
-
-    if (rosbot_sensors::initImu() == INV_SUCCESS)
-        imu_init_flag = true;
 
     KINEMATICS_TYPE = 0;
     rk = rosbot_kinematics::RosbotKinematics::kinematicsType(KINEMATICS_TYPE);
 
+    I2C * i2c_ptr = new I2C(IMU_I2C_SDA, IMU_I2C_SCL);
+    i2c_ptr->frequency(IMU_I2C_FREQUENCY);
+
+    ImuDriver::Type type = ImuDriver::getType(i2c_ptr,2);
+    sprintf(imu_description_string, "Detected sensor: %s\r\n", imu_sensor_type_string[type]);
+
+    if(type != ImuDriver::UNKNOWN)
+    {
+        imu_driver_ptr = new ImuDriver(i2c_ptr,type);
+        imu_driver_ptr->init();
+        imu_driver_ptr->start();
+        imu_init_flag = true;
+    }
+       
     ros::Subscriber<geometry_msgs::Twist> cmd_vel_sub("cmd_vel", &velocityCallback);
     ros::Subscriber<std_msgs::UInt32> cmd_ser_sub("cmd_ser", &servoCallback);
     ros::ServiceServer<rosbot_ekf::Configuration::Request, rosbot_ekf::Configuration::Response> config_srv("config", responseCallback);
@@ -873,15 +910,20 @@ int main()
     print_debug_info();
 #endif /* MEMORY_DEBUG_INFO */
 
-    int spin_result;
-    int err_msg = 0;
-    uint32_t spin_count = 1;
-    float curr_odom_calc_time, last_odom_calc_time = 0.0f;
+    if(imu_init_flag)
+        imu_driver_ptr->start();
 
+    if(distance_sensors_init_flag)
+    {
+        uint8_t * data = distance_sensor_commands.alloc();
+        *data = 1;
+        distance_sensor_commands.put(data);
+        distance_sensors_enabled = true;
+    }
+    
     while (1)
     {
-
-        if (is_speed_watchdog_enabled)
+        if(is_speed_watchdog_enabled)
         {
             if (!is_speed_watchdog_active && (odom_watchdog_timer.read_ms() - last_speed_command_time) > speed_watchdog_interval)
             {
@@ -973,11 +1015,11 @@ int main()
                 battery_pub->publish(&battery_state);
         }
 
-        osEvent evt = distance_sensor_mail_box.get(0);
-        if (evt.status == osEventMail)
+        osEvent evt1 = distance_sensor_mail_box.get(0);
+        if(evt1.status == osEventMail)
         {
-            SensorsMeasurement *message = (SensorsMeasurement *)evt.value.p;
-            if (message->status == MultiDistanceSensor::ERR_I2C_FAILURE)
+            SensorsMeasurement * message = (SensorsMeasurement*)evt1.value.p;
+            if(message->status == MultiDistanceSensor::ERR_I2C_FAILURE)
             {
                 err_msg++;
                 if (distance_sensor_commands.empty() && err_msg == 3)
@@ -1019,12 +1061,12 @@ int main()
         //         if(nh.connected()) range_pub[i]->publish(&range_msg[i]);
         //     }
         // }
+        
+        osEvent evt2 = imu_sensor_mail_box.get(0);
 
-        evt = rosbot_sensors::imu_sensor_mail_box.get(0);
-
-        if (evt.status == osEventMail)
+        if(evt2.status == osEventMail)
         {
-            rosbot_sensors::imu_meas_t *message = (rosbot_sensors::imu_meas_t *)evt.value.p;
+            ImuDriver::ImuMesurement * message = (ImuDriver::ImuMesurement*)evt2.value.p;
 
             imu_msg.header.stamp = nh.now(message->timestamp);
             imu_msg.orientation.x = message->orientation[0];
@@ -1036,9 +1078,8 @@ int main()
                 imu_msg.angular_velocity[i] = message->angular_velocity[i];
                 imu_msg.linear_acceleration[i] = message->linear_velocity[i];
             }
-            rosbot_sensors::imu_sensor_mail_box.free(message);
-            if (nh.connected())
-                imu_pub->publish(&imu_msg);
+            imu_sensor_mail_box.free(message);
+            if(nh.connected()) imu_pub->publish(&imu_msg);
         }
 
         // LOGS
@@ -1050,8 +1091,10 @@ int main()
                 nh.loginfo(WELLCOME_STR);
                 if (!distance_sensors_init_flag)
                     nh.logerror("VL53L0X sensors initialisation failure!");
-                if (!imu_init_flag)
-                    nh.logerror("MPU9250 initialisation failure!");
+                if(!imu_init_flag)
+                    nh.logerror("No IMU sensor detected!");
+                else
+                    nh.loginfo(imu_description_string);
             }
         }
         else
@@ -1059,13 +1102,13 @@ int main()
             welcome_flag = true;
         }
 
-        if ((spin_result = nh.spinOnce()) != ros::SPIN_OK)
-        {
-            // nh.logwarn(spin_result == -1 ? "SPIN_ERR" : "SPIN_TIMEOUT");
-            do
-            {
-            } while (0); // do nothing at the moment
-        }
+        nh.spinOnce();
+
+        // if((spin_result=nh.spinOnce()) != ros::SPIN_OK)
+        // {
+        //     // nh.logwarn(spin_result == -1 ? "SPIN_ERR" : "SPIN_TIMEOUT");
+        //     do {}while(0); // do nothing at the moment
+        // }
         spin_count++;
         ThisThread::sleep_for(MAIN_LOOP_INTERVAL_MS);
     }

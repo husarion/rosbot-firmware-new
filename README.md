@@ -1,5 +1,5 @@
 # ROSbot firmware
-The ROSbot mobile platform's microcontroller firmware. Written in C++ using [arm's Mbed OS framework](https://os.mbed.com/) ( `mbed-os-5.14.1`).
+The ROSbot mobile platform's microcontroller firmware. Written in C++ using [arm's Mbed OS framework](https://os.mbed.com/) ( `mbed-os-5.14.2`).
 
 ```
 ______  _____  _____  _             _           __           
@@ -9,126 +9,135 @@ ______  _____  _____  _             _           __
 | |\ \ \ \_/ //\__/ /| |_) || (_) || |_       | |   \ V  V / 
 \_| \_| \___/ \____/ |_.__/  \___/  \__|      |_|    \_/\_/  
 ```                                                    
-**Firmware version:** `0.13.1`
+**Firmware version:** `0.14.2`
 
 ## Prerequisites
 You need to install following tools:
 * [Visual Studio Code IDE](https://code.visualstudio.com/)
-* [GNU Arm Embedded version 6 toolchain](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads)
-* [STM32 ST-LINK Utility](https://www.st.com/en/development-tools/stsw-link004.html) (Windows)
-* [stlink flasher](https://github.com/texane/stlink/blob/master/README.md) (Mac/Linux)
-* [Mbed CLI](https://os.mbed.com/docs/mbed-os/v5.12/tools/installation-and-setup.html) 
+* [GNU Arm Embedded version 6 2017-q2 toolchain](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads)
+* [stlink flasher](https://github.com/stlink-org/stlink/tree/master)
 
-### Required Visual Studio Code extensions:
+### Required Visual Studio Code extensions
 * [Microsoft C/C++ extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools) (`ms-vscode.cpptools`)
 * [Cortex-Debug](https://marketplace.visualstudio.com/items?itemName=marus25.cortex-debug) (`marus25.cortex-debug`)
 
-## Mbed CLI installation
+### Additional dependencies
+We will also need following dependencies:
+* Python 2.7.x
+* Git
+* Mercurial
 
-To install the tool follow the official documentation:
-* [Linux](https://os.mbed.com/docs/mbed-os/v5.14/tools/manual-installation.html)
-* [Mac/Windows](https://os.mbed.com/docs/mbed-os/v5.14/tools/installation-and-setup.html)
+Check [this](https://os.mbed.com/docs/mbed-os/v5.14/tools/manual-installation.html) link to find instruction on how to install this dependencies on your system.  
 
+## Setting up a workspace directory and virtual environment
+
+Install virtualenv package using pip2:
+```bash
+$ pip install virtualenv
+```
+
+Create a new folder `core2-mbed-workspace`. It will serve as workspace for your mbed projects.  Run:
+```bash
+$ mkdir core2-mbed-workspace && cd core2-mbed-workspace
+```
+
+In `core2-mbed-workspace` directory create python virtual environment (use full path to python version):
+
+```bash
+$ python2.7 -m virtualenv -p /usr/bin/python2.7 mbed_venv
+```
+
+## mbed-cli installation (python virtual environment)
+
+Activate virtual environmet:
+
+```bash
+$ source mbed_venv/bin/activate
+(mbed_venv) 
+```
+
+Install mbed-cli:
+```bash
+(mbed_venv)$ pip install mbed-cli
+```
 
 After installation set the path to the binary directory of your **GCC Arm Embedded Compiler** installation:
 
+```bash
+(mbed_venv)$ mbed config -G GCC_ARM_PATH "<your_path>\bin" 
+```
+
 Example for Windows:
 ```
-$ mbed config -G GCC_ARM_PATH "C:\Program Files (x86)\GNU Tools ARM Embedded\6 2017-q2-update\bin" 
+(mbed_venv)$ mbed config -G GCC_ARM_PATH "C:\Program Files (x86)\GNU Tools ARM Embedded\6 2017-q2-update\bin" 
 ```
 
 Example for Linux:
 ```
-$ mbed config -G GCC_ARM_PATH ~\opt\gcc-arm-none-eabi-6-2017-q2-update\bin
+(mbed_venv)$ mbed config -G GCC_ARM_PATH ~\opt\gcc-arm-none-eabi-6-2017-q2-update\bin
 ```
-
-> Make sure you have the **GNU Arm Embedded version 6 toolchain** installed on your system. Check the *Prerequisites* section.
 
 To check current configuration run:
 
-```
-$ mbed config --list
-```
+```bash
+(mbed_venv)$ mbed config --list
 
-## Preparing a workspace
-Create a new folder `core2-mbed-workspace`. It will serve as workspace for your mbed projects.  Run:
+```
+## workspace setup
+
+1. Import mbed-os to `core2-mbed-workspace` directory:
 
 ```bash
-$ mkdir core2-mbed-workspace && cd core2-mbed-workspace
+(mbed_venv)$ mbed import mbed-os
 ```
-Next step is to import `mbed-os` library. It will be used by all your projects. In your workspace folder run:
+
+2. The firmware uses Mbed OS version 5.14.2. In `mbed-os` directory run:
 
 ```bash
-$ mbed import mbed-os
+(mbed_venv)$ cd mbed-os && mbed update mbed-os-5.14.2
 ```
 
-Set Mbed OS version to supported by this template:
+3. Install required python packages
 
 ```bash
-$ cd mbed-os
-$ mbed update mbed-os-5.14.1
+(mbed_venv)$ pip install -r requirements.txt
 ```
 
-During Mbed OS installation you can be asked to install additional python libraries. Switch to `mbed-os` dir and run:
+4. Import/copy this repo to `core2-mbed-workspace` directory. After that enter `lib` directory and run:
 
 ```bash
-$ pip install -r requirements.txt --user
+(mbed_venv)$ mbed update master
 ```
 
-Set path to `mbed-os` directory in Mbed CLI. These way all your projects can use one instance of the library (default configuration is to have separate instance of library for each project). Run:
+It will download all required dependencies.
+
+5. Deactivate virtual environment
+```bash
+(mbed_venv)$ deactivate
+```
+
+## How to use firmware
+
+Open Visual Studio Code, press `CTRL + SHIFT + P` and type `Git: Clone` in Command Pallet. Copy and paste the URL to this repo that you will find at GitHub page. 
+
+You will be prompted to select your repo location. Choose `core2-mbed-workspace` directory.
+
+### Create symbolic link to mbed-os directory
+
+Inside `core2-mbed-template` run:
 
 ```bash
-$ mbed config -G MBED_OS_DIR <path to mbed-os>
+ln -s ../mbed-os ./mbed-os
 ```
 
-Example:
-
-```bash
-$ mbed config -G MBED_OS_DIR "E:\mbed_projects\core2-mbed-workspace\mbed-os"
-```
-
-### Adding `.mbedignore` file
-
-In `mbed-os` directory create `.mbedignore` (filename starts with dot) file with following content:
-
-```
-features/cellular/*
-features/cryptocell/*
-features/deprecated_warnings/*
-features/lorawan/*
-features/lwipstack/*
-features/nanostack/*
-features/netsocket/*
-features/nfc/*
-features/unsupported/*
-components/wifi/*
-components/cellular/*
-components/802.15.4_RF/*
-components/TARGET_PSA/*
-targets/TARGET_STM/TARGET_STM32F4/TARGET_STM32F407xG/device/TOOLCHAIN_GCC_ARM/STM32F407XG.ld
-targets/TARGET_STM/TARGET_STM32F4/TARGET_STM32F407xG/device/TOOLCHAIN_GCC_ARM/startup_stm32f407xx.S
-```
-
-## Using firmware
-
-Open Visual Studio Code, press `CTRL + SHIFT + P` and type `Git: Clone` in Command Pallet. Copy and paste `https://github.com/husarion/rosbot-firmware-new.git` URL.
-
-You will be prompted to select your r\epo location. Choose `core2-mbed-workspace` directory.
-
-### Updating project files
-Open `rosbot-firmware-new` in Visual Studio Code IDE. In `.vscode` directory find `settings.json` file and change the value of `C_cpp.default.compilerPath` with path to `arm-none-eabi-g++` location on your system:
+### Update project files
+Open `core2-mbed-template` in VSC. In `.vscode` directory find `settings.json` file and change the value of `C_cpp.default.compilerPath` with path to `arm-none-eabi-g++` location on your system:
 
 Example (Windows):
 ```json
 {
-    "C_Cpp.default.compilerPath": "C:\\Program Files (x86)\\GNU Tools ARM Embedded\\6 2017-q2-update\\bin\\arm-none-eabi-g++"
+    "C_Cpp.default.compilerPath": "C:/Program Files (x86)/GNU Tools ARM Embedded/6 2017-q2-update/bin/arm-none-eabi-g++"
 }
-```
-
-After that update all repository dependencies. In `rosbot-firmware-new/lib` directory run:
-
-```bash
-$ mbed update master
 ```
 
 ### Compilation tasks
@@ -138,14 +147,20 @@ To build and flash your firmware press `CTRL + SHIFT + P` and type `Tasks: Run T
 * `BUILD (DEBUG)`
 * `FLASH FIRMWARE (RELEASE)`*
 * `FLASH FIRMWARE (DEBUG)`  *
-* `CREATE STATIC MBED-OS LIB (RELEASE)`
-* `CREATE STATIC MBED-OS LIB (DEBUG)`
-* `BUILD FROM STATIC LIB (RELEASE)`
-* `BUILD FROM STATIC LIB (DEBUG)`
 * `CLEAN DEBUG`
 * `CLEAN RELEASE`
 
 `*` *require ST-LINK programmer*
+
+### Updating project files
+
+Open `settings.json` file from `.vscode` and change value of `C_cpp.default.compilerPath` with path to `arm-none-eabi-g++` location on your system:
+
+```json
+{
+    "C_Cpp.default.compilerPath": "C:/Program Files (x86)/GNU Tools ARM Embedded/6 2017-q2-update/bin/arm-none-eabi-g++"
+}
+```
 
 You can add new tasks and customize existing ones by editing `task.json` file. 
 

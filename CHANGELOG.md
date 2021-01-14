@@ -198,6 +198,17 @@ Initial log. Introducing new ROSbot firmware written using Mbed OS framework.
   - Update MPU9250 readings only if there is more then 32 bytes in the fifo.
   - Fixed servo numeration in cmd_ser topic.
 
+## [0.14.0] - 2020-11-13
+
+### Added
+  - support for BNO055 IMU sensor
+
+## [0.14.1] - 2020-11-16
+  - angular velocity and linear acceleration for BNO055 IMU sensor
+
+## [0.14.2] - 2020-12-18
+  - fixed bug with MPU9250 initialization (both sensors support)
+
 ## TODO
   - better code documentation
   - better modular, oop implementation,

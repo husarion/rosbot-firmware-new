@@ -1,0 +1,14 @@
+mbed-os/features/cellular/*
+mbed-os/features/cryptocell/*
+mbed-os/features/deprecated_warnings/*
+mbed-os/features/lorawan/*
+mbed-os/features/lwipstack/*
+mbed-os/features/nanostack/*
+mbed-os/features/netsocket/*
+mbed-os/features/nfc/*
+mbed-os/features/unsupported/*
+mbed-os/components/wifi/*
+mbed-os/components/802.15.4_RF/*
+mbed-os/targets/TARGET_STM/TARGET_STM32F4/TARGET_STM32F407xG/device/TOOLCHAIN_GCC_ARM/STM32F407XG.ld
+mbed-os/targets/TARGET_STM/TARGET_STM32F4/TARGET_STM32F407xG/device/TOOLCHAIN_GCC_ARM/startup_stm32f407xx.S
+mbed-os/usb/*
