@@ -50,14 +50,6 @@ namespace rosbot_kinematics
     class RosbotKinematics
     {
     protected:
-        RosbotWheel custom_wheel_params = {
-            .radius = WHEEL_RADIUS,
-            .diameter_modificator = DIAMETER_MODIFICATOR,
-            .tyre_deflation = TYRE_DEFLATION,
-            .gear_ratio = GEAR_RATIO,
-            .encoder_cpr = ENCODER_CPR,
-            .polarity = POLARITY};
-
     public:
         RosbotKinematics();
         static RosbotKinematics *kinematicsType(int type);
@@ -66,19 +58,10 @@ namespace rosbot_kinematics
         virtual void updateRosbotOdometry(RosbotDrive &drive, RosbotOdometry &odom, float dtime) = 0;
         void resetRosbotOdometry(RosbotDrive &drive, RosbotOdometry &odom);
         virtual void calibrateOdometry(float diameter_modificator, float tyre_deflation);
-        virtual RosbotWheel getCoefficients();
     };
     class DifferentialDrive : public RosbotKinematics
     {
     private:
-        RosbotWheel custom_wheel_params = {
-            .radius = WHEEL_RADIUS,
-            .diameter_modificator = DIAMETER_MODIFICATOR,
-            .tyre_deflation = TYRE_DEFLATION,
-            .gear_ratio = GEAR_RATIO,
-            .encoder_cpr = ENCODER_CPR,
-            .polarity = POLARITY};
-
     public:
         DifferentialDrive(/* args */);
         ~DifferentialDrive();
@@ -90,14 +73,6 @@ namespace rosbot_kinematics
     class MecanumDrive : public RosbotKinematics
     {
     private:
-        RosbotWheel custom_wheel_params = {
-            .radius = WHEEL_RADIUS,
-            .diameter_modificator = DIAMETER_MODIFICATOR,
-            .tyre_deflation = TYRE_DEFLATION,
-            .gear_ratio = GEAR_RATIO,
-            .encoder_cpr = ENCODER_CPR,
-            .polarity = POLARITY};
-
     public:
         MecanumDrive(/* args */);
         ~MecanumDrive();

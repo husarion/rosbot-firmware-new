@@ -571,7 +571,7 @@ uint8_t ConfigFunctionality::calibrateOdometry(const char *datain, const char **
     {
         rk->calibrateOdometry(diameter_modificator, tyre_deflation);
         RosbotDrive &drive = RosbotDrive::getInstance();
-        drive.updateWheelCoefficients(rk->getCoefficients());
+        drive.updateWheelCoefficients(rosbot_kinematics::custom_wheel_params);
         return rosbot_ekf::Configuration::Response::SUCCESS;
     }
     return rosbot_ekf::Configuration::Response::FAILURE;
@@ -819,7 +819,7 @@ int main()
     MultiDistanceSensor &distance_sensors = MultiDistanceSensor::getInstance();
 
     drive.setupMotorSequence(MOTOR_FR, MOTOR_FL, MOTOR_RR, MOTOR_RL);
-    drive.init(rk->getCoefficients(), RosbotDrive::DEFAULT_REGULATOR_PARAMS);
+    drive.init(rosbot_kinematics::custom_wheel_params, RosbotDrive::DEFAULT_REGULATOR_PARAMS);
     drive.enable(true);
     drive.enablePidReg(true);
 
@@ -845,7 +845,7 @@ int main()
     if (rosbot_sensors::initImu() == INV_SUCCESS)
         imu_init_flag = true;
 
-    KINEMATICS_TYPE = 0;  
+    KINEMATICS_TYPE = 0;
     rk = rosbot_kinematics::RosbotKinematics::kinematicsType(KINEMATICS_TYPE);
 
     ros::Subscriber<geometry_msgs::Twist> cmd_vel_sub("cmd_vel", &velocityCallback);

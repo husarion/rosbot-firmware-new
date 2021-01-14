@@ -2,6 +2,15 @@
 
 namespace rosbot_kinematics
 {
+
+    RosbotWheel custom_wheel_params = {
+        .radius = WHEEL_RADIUS,
+        .diameter_modificator = DIAMETER_MODIFICATOR,
+        .tyre_deflation = TYRE_DEFLATION,
+        .gear_ratio = GEAR_RATIO,
+        .encoder_cpr = ENCODER_CPR,
+        .polarity = POLARITY};
+
     RosbotKinematics::RosbotKinematics()
     {
     }
@@ -20,13 +29,8 @@ namespace rosbot_kinematics
 
     void RosbotKinematics::calibrateOdometry(float diameter_modificator, float tyre_deflation)
     {
-        this->custom_wheel_params.diameter_modificator = diameter_modificator;
-        this->custom_wheel_params.tyre_deflation = tyre_deflation;
-    }
-
-    RosbotWheel RosbotKinematics::getCoefficients()
-    {
-        return custom_wheel_params;
+        custom_wheel_params.diameter_modificator = diameter_modificator;
+        custom_wheel_params.tyre_deflation = tyre_deflation;
     }
 
     RosbotKinematics *RosbotKinematics::kinematicsType(int type)
@@ -100,10 +104,10 @@ namespace rosbot_kinematics
     {
         NewTargetSpeed new_speed;
         new_speed.mode = MPS;
-        new_speed.speed[MOTOR_FR] = (1 / this->custom_wheel_params.radius) * (speed.lin_x + speed.lin_y + (ROBOT_WIDTH + ROBOT_LENGTH) * speed.ang_z); //  # rad/s
-        new_speed.speed[MOTOR_FL] = (1 / this->custom_wheel_params.radius) * (speed.lin_x - speed.lin_y - (ROBOT_WIDTH + ROBOT_LENGTH) * speed.ang_z);
-        new_speed.speed[MOTOR_RR] = (1 / this->custom_wheel_params.radius) * (speed.lin_x - speed.lin_y + (ROBOT_WIDTH + ROBOT_LENGTH) * speed.ang_z);
-        new_speed.speed[MOTOR_RL] = (1 / this->custom_wheel_params.radius) * (speed.lin_x + speed.lin_y - (ROBOT_WIDTH + ROBOT_LENGTH) * speed.ang_z);
+        new_speed.speed[MOTOR_FR] = (1 / custom_wheel_params.radius) * (speed.lin_x + speed.lin_y + (ROBOT_WIDTH + ROBOT_LENGTH) * speed.ang_z); //  # rad/s
+        new_speed.speed[MOTOR_FL] = (1 / custom_wheel_params.radius) * (speed.lin_x - speed.lin_y - (ROBOT_WIDTH + ROBOT_LENGTH) * speed.ang_z);
+        new_speed.speed[MOTOR_RR] = (1 / custom_wheel_params.radius) * (speed.lin_x - speed.lin_y + (ROBOT_WIDTH + ROBOT_LENGTH) * speed.ang_z);
+        new_speed.speed[MOTOR_RL] = (1 / custom_wheel_params.radius) * (speed.lin_x + speed.lin_y - (ROBOT_WIDTH + ROBOT_LENGTH) * speed.ang_z);
     }
 
     void MecanumDrive::updateRosbotOdometry(RosbotDrive &drive, RosbotOdometry &odom, float dtime)
