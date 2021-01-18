@@ -111,7 +111,7 @@ volatile uint32_t last_speed_command_time = 0;
 
 rosbot_sensors::ServoManger servo_manager;
 
-int KINEMATICS_TYPE{};
+int KINEMATICS_TYPE{}; // 0 diff drive, 1 mecanum
 rosbot_kinematics::RosbotKinematics *rk = nullptr;
 
 static void button1Callback()
@@ -232,7 +232,7 @@ static void initJointStatePublisher()
 static void velocityCallback(const geometry_msgs::Twist &twist_msg)
 {
     RosbotDrive &drive = RosbotDrive::getInstance();
-    RosbotSpeed speed = {twist_msg.linear.x, twist_msg.linear.x, twist_msg.angular.z};
+    RosbotSpeed speed = {twist_msg.linear.x, twist_msg.linear.y, twist_msg.angular.z};
     rk->setRosbotSpeed(drive, speed);
     last_speed_command_time = odom_watchdog_timer.read_ms();
     is_speed_watchdog_active = false;

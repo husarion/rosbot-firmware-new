@@ -104,14 +104,37 @@ namespace rosbot_kinematics
     {
         NewTargetSpeed new_speed;
         new_speed.mode = MPS;
-        new_speed.speed[MOTOR_FR] = (1 / custom_wheel_params.radius) * (speed.lin_x + speed.lin_y + (ROBOT_WIDTH + ROBOT_LENGTH) * speed.ang_z); //  # rad/s
-        new_speed.speed[MOTOR_FL] = (1 / custom_wheel_params.radius) * (speed.lin_x - speed.lin_y - (ROBOT_WIDTH + ROBOT_LENGTH) * speed.ang_z);
-        new_speed.speed[MOTOR_RR] = (1 / custom_wheel_params.radius) * (speed.lin_x - speed.lin_y + (ROBOT_WIDTH + ROBOT_LENGTH) * speed.ang_z);
-        new_speed.speed[MOTOR_RL] = (1 / custom_wheel_params.radius) * (speed.lin_x + speed.lin_y - (ROBOT_WIDTH + ROBOT_LENGTH) * speed.ang_z);
+        new_speed.speed[MOTOR_FR] = (speed.lin_x + speed.lin_y + (ROBOT_WIDTH_HALF + ROBOT_LENGTH_HALF) * 2* speed.ang_z); //  # m/s
+        new_speed.speed[MOTOR_FL] = (speed.lin_x - speed.lin_y - (ROBOT_WIDTH_HALF + ROBOT_LENGTH_HALF) * 2* speed.ang_z);
+        new_speed.speed[MOTOR_RR] = (speed.lin_x - speed.lin_y + (ROBOT_WIDTH_HALF + ROBOT_LENGTH_HALF) * 2* speed.ang_z);
+        new_speed.speed[MOTOR_RL] = (speed.lin_x + speed.lin_y - (ROBOT_WIDTH_HALF + ROBOT_LENGTH_HALF) * 2* speed.ang_z);
+        drive.updateTargetSpeed(new_speed);
     }
 
     void MecanumDrive::updateRosbotOdometry(RosbotDrive &drive, RosbotOdometry &odom, float dtime)
     {
+
+        // Odometry *iodom = &odom.odom;
+        // iodom->wheel_FR_ang_pos = drive.getAngularPos(MOTOR_FR);
+        // iodom->wheel_FL_ang_pos = drive.getAngularPos(MOTOR_FL);
+        // iodom->wheel_RR_ang_pos = drive.getAngularPos(MOTOR_RR);
+        // iodom->wheel_RL_ang_pos = drive.getAngularPos(MOTOR_RL);
+        // // wheel_FL_ang_vel, wheel_FR_ang_vel, wheel_RL_ang_vel, wheel_RR_ang_vel, dtime):
+        // // # Mecanum:
+        // linear_velocity_x_ = (wheel_FL_ang_vel + wheel_FR_ang_vel + wheel_RL_ang_vel + wheel_RR_ang_vel) * (self.wheel_radius/4)
+        // linear_velocity_y_ = (-wheel_FL_ang_vel + wheel_FR_ang_vel + wheel_RL_ang_vel - wheel_RR_ang_vel) * (self.wheel_radius/4)
+        // angular_velocity_z_ = (-wheel_FL_ang_vel + wheel_FR_ang_vel - wheel_RL_ang_vel + wheel_RR_ang_vel) * (self.wheel_radius/(4 * (self.robot_width / 2 + self.robot_length / 2)))
+
+        // delta_heading = angular_velocity_z_ / dtime  // [radians]
+        // self.robot_th_pos = self.robot_th_pos + delta_heading
+        // delta_x = (linear_velocity_x_ * math.cos(self.robot_th_pos) -
+        //            linear_velocity_y_ * math.sin(self.robot_th_pos)) / dtime  // [m]
+        // delta_y = (linear_velocity_x_ * math.sin(self.robot_th_pos) +
+        //            linear_velocity_y_ * math.cos(self.robot_th_pos)) / dtime  // [m]
+        // self.robot_x_pos = self.robot_x_pos + delta_x
+        // self.robot_y_pos = self.robot_y_pos + delta_y
+        // return self.robot_x_pos, self.robot_y_pos, self.robot_th_pos
+
     }
 
 } // namespace rosbot_kinematics
