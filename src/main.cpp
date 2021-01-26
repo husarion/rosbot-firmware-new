@@ -111,7 +111,6 @@ volatile uint32_t last_speed_command_time = 0;
 
 rosbot_sensors::ServoManger servo_manager;
 
-int KINEMATICS_TYPE{}; // 0 diff drive, 1 mecanum
 rosbot_kinematics::RosbotKinematics *rk = nullptr;
 
 static void button1Callback()
@@ -868,7 +867,6 @@ int main()
         distance_sensors_init_flag = true;
     }
 
-    KINEMATICS_TYPE = 0;
     rk = rosbot_kinematics::RosbotKinematics::kinematicsType(KINEMATICS_TYPE);
 
     I2C * i2c_ptr = new I2C(IMU_I2C_SDA, IMU_I2C_SCL);
@@ -971,6 +969,7 @@ int main()
         {
             current_vel.linear.x = sqrt(odometry.odom.robot_x_vel * odometry.odom.robot_x_vel + odometry.odom.robot_y_vel * odometry.odom.robot_y_vel);
             current_vel.angular.z = odometry.odom.robot_angular_vel;
+            current_vel = rk->getTwist(odometry);
             pose.pose.position.x = odometry.odom.robot_x_pos;
             pose.pose.position.y = odometry.odom.robot_y_pos;
             pose.pose.orientation = tf::createQuaternionFromYaw(odometry.odom.robot_angular_pos);
