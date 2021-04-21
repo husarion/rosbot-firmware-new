@@ -1,4 +1,7 @@
-# ROSbot firmware
+# ROSbot firmware [deprecated]
+
+> use https://github.com/husarion/rosbot-stm32-firmware instead
+
 The ROSbot mobile platform's microcontroller firmware. Written in C++ using [arm's Mbed OS framework](https://os.mbed.com/) ( `mbed-os-5.14.1`).
 
 ```
